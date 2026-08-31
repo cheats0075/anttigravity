@@ -1,0 +1,8 @@
+{
+  "appId": "com.anttigravity.app",
+  "appName": "Anttigravity",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}
