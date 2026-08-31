@@ -216,8 +216,6 @@ function selectDay(dayId) {
 }
 
 function renderWorkout() {
-  const hasProgress = Object.keys(loadProgress(currentGender)).length > 0;
-
   let html = `
     <div class="screen">
       <div class="workout-title">${currentWorkout.title}</div>
@@ -247,7 +245,7 @@ function renderWorkout() {
   html += `
     <div class="btn-row" style="justify-content: center;">
       <button class="btn-back-days" onclick="goDayList()">← Voltar</button>
-      ${hasProgress ? '<button class="btn-reset" onclick="resetProgress()">Zerar Treinos</button>' : ''}
+      <button class="btn-reset" onclick="resetProgress()">Zerar Treinos</button>
     </div>
   </div>`;
   app.innerHTML = html;
@@ -307,6 +305,15 @@ function renderActiveExercise() {
   }
 }
 
+function updateTimerDisplay() {
+  const circumference = 2 * Math.PI * 90;
+  const offset = circumference * (1 - timer / REST_TIME);
+  const timeText = document.querySelector('.time-text');
+  const progressCircle = document.querySelector('.timer-circle .progress');
+  if (timeText) timeText.textContent = formatTime(timer);
+  if (progressCircle) progressCircle.setAttribute('stroke-dashoffset', offset);
+}
+
 function cancelTimer() {
   if (timerInterval) clearInterval(timerInterval);
   isResting = false;
@@ -352,7 +359,7 @@ function startTimer() {
       timer = 0;
       renderActiveExercise();
     } else {
-      renderActiveExercise();
+      updateTimerDisplay();
     }
   }, 1000);
 }
