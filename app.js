@@ -380,15 +380,58 @@ function checkAllCompleted() {
 }
 
 function resetProgress() {
-  if (!confirm('Tem certeza que quer zerar todo o progresso?')) return;
-  const keysToRemove = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key && (key.startsWith('progress_') || key.startsWith('exercises_'))) {
-      keysToRemove.push(key);
-    }
-  }
-  keysToRemove.forEach(k => localStorage.removeItem(k));
+  const days = workouts[currentGender];
+  const progress = loadProgress(currentGender);
+
+  let html = `
+    <div class="modal-overlay" onclick="closeModal(event)">
+      <div class="modal">
+        <div class="modal-title">Zerar Treino</div>
+  `;
+
+  days.forEach(day => {
+    if (day.restDay) return;
+    const completed = progress[day.id] === true;
+    const exStates = loadExerciseStates(currentGender, day.id);
+    const hasAny = completed || Object.keys(exStates).length > 0;
+
+    html += `
+      <div class="modal-day ${completed ? 'done' : ''}" onclick="resetDay('${day.id}')">
+        <div class="modal-day-name">${day.day}</div>
+        <div class="modal-day-title">${day.title}</div>
+        ${completed ? '<div class="done-label">✓ Concluído</div>' : ''}
+      </div>
+    `;
+  });
+
+  html += `
+        <button class="modal-close" onclick="closeModal()">Cancelar</button>
+      </div>
+    </div>
+  `;
+
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function closeModal(e) {
+  if (e && e.target && !e.target.classList.contains('modal-overlay')) return;
+  const overlay = document.querySelector('.modal-overlay');
+  if (overlay) overlay.remove();
+}
+
+function resetDay(dayId) {
+  const day = workouts[currentGender].find(d => d.id === dayId);
+  if (!confirm(`Zerar o treino de ${day.day} - ${day.title}?`)) return;
+
+  const progress = loadProgress(currentGender);
+  delete progress[dayId];
+  saveProgress(currentGender, progress);
+
+  localStorage.removeItem(`exercises_${currentGender}_${dayId}`);
+
+  const overlay = document.querySelector('.modal-overlay');
+  if (overlay) overlay.remove();
+
   renderWorkout();
 }
 

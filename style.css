@@ -375,6 +375,92 @@ body {
   transform: scale(0.96);
 }
 
+/* MODAL */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+}
+
+.modal {
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+  width: 100%;
+  max-width: 400px;
+  max-height: 80dvh;
+  overflow-y: auto;
+}
+
+.modal-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent);
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.modal-day {
+  background: var(--dark);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.modal-day:active {
+  transform: scale(0.97);
+  border-color: var(--accent);
+}
+
+.modal-day-name {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.modal-day-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.modal-day.done {
+  border-color: var(--green);
+}
+
+.modal-day .done-label {
+  font-size: 12px;
+  color: var(--green);
+  margin-top: 2px;
+}
+
+.modal-close {
+  width: 100%;
+  margin-top: 12px;
+  background: none;
+  border: 2px solid var(--border);
+  color: var(--muted);
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.modal-close:active {
+  transform: scale(0.97);
+}
+
 /* TIMER CIRCLE */
 .timer-circle {
   position: relative;
