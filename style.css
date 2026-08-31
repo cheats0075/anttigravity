@@ -336,6 +336,55 @@ body {
   margin-top: 10px;
 }
 
+/* PULSE */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.pulse {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* BUTTONS ROW */
+.btn-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.btn-reset {
+  background: #c0392b;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 14px 28px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.btn-reset:active {
+  transform: scale(0.96);
+}
+
+.btn-back-days {
+  background: none;
+  border: 2px solid var(--border);
+  color: var(--muted);
+  border-radius: 12px;
+  padding: 14px 28px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.btn-back-days:active {
+  transform: scale(0.96);
+}
+
 /* TIMER CIRCLE */
 .timer-circle {
   position: relative;

@@ -152,6 +152,7 @@ function selectGender(gender) {
 function renderDayList() {
   const days = workouts[currentGender];
   const progress = loadProgress(currentGender);
+  const hasProgress = Object.keys(progress).length > 0;
 
   let html = `
     <div class="screen">
@@ -161,7 +162,7 @@ function renderDayList() {
   days.forEach(day => {
     const completed = progress[day.id] === true;
     const cardClass = day.restDay ? 'day-card rest' : completed ? 'day-card completed' : 'day-card';
-    const titleClass = day.restDay ? 'day-title rest-text' : 'day-title';
+    const titleClass = day.restText ? 'day-title rest-text' : day.restDay ? 'day-title rest-text' : 'day-title';
 
     html += `
       <div class="${cardClass}" ${!day.restDay ? `onclick="selectDay('${day.id}')"` : ''}>
@@ -175,7 +176,12 @@ function renderDayList() {
     `;
   });
 
-  html += `</div>`;
+  html += `
+    <div class="btn-row" style="justify-content: center; margin-top: 8px;">
+      <button class="btn-back-days" onclick="renderHome()">← Voltar</button>
+      ${hasProgress ? '<button class="btn-reset" onclick="resetProgress()">Zerar Treinos</button>' : ''}
+    </div>
+  </div>`;
   app.innerHTML = html;
 }
 
@@ -213,7 +219,11 @@ function renderWorkout() {
     `;
   });
 
-  html += `</div>`;
+  html += `
+    <div class="btn-row" style="justify-content: center;">
+      <button class="btn-back-days" onclick="renderDayList()">← Voltar</button>
+    </div>
+  </div>`;
   app.innerHTML = html;
 }
 
@@ -236,7 +246,7 @@ function renderActiveExercise() {
       <div class="screen active-exercise">
         <div class="active-name">${activeExercise.name}</div>
         <img class="active-image" src="assets/exercises/${activeExercise.image}" alt="${activeExercise.name}" onerror="this.style.display='none'">
-        <div class="active-reps">Repetições: ${activeExercise.reps}</div>
+        <div class="active-reps pulse">Repetições: ${activeExercise.reps}</div>
         <div class="timer-circle">
           <svg viewBox="0 0 200 200">
             <circle class="track" cx="100" cy="100" r="90"/>
@@ -244,7 +254,7 @@ function renderActiveExercise() {
               stroke-dasharray="${circumference}"
               stroke-dashoffset="${offset}"/>
           </svg>
-          <div class="time-text">${formatTime(timer)}</div>
+          <div class="time-text pulse">${formatTime(timer)}</div>
         </div>
         <div class="timer-hint">Prepare-se para a próxima série</div>
         <button class="btn-back" onclick="cancelTimer()">Cancelar</button>
@@ -329,6 +339,19 @@ function checkAllCompleted() {
   } else {
     renderWorkout();
   }
+}
+
+function resetProgress() {
+  if (!confirm('Tem certeza que quer zerar todo o progresso?')) return;
+  const keysToRemove = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && (key.startsWith('progress_') || key.startsWith('exercises_'))) {
+      keysToRemove.push(key);
+    }
+  }
+  keysToRemove.forEach(k => localStorage.removeItem(k));
+  renderDayList();
 }
 
 renderHome();
