@@ -107,6 +107,7 @@ let currentSet = 0;
 let timer = 0;
 let timerInterval = null;
 let isResting = false;
+let currentView = 'home';
 
 function loadProgress(gender) {
   const saved = localStorage.getItem(`progress_${gender}`);
@@ -132,7 +133,25 @@ function formatTime(seconds) {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
+function navigate(view, data, pushState) {
+  currentView = view;
+  if (pushState !== false) {
+    history.pushState({ view, data }, '', '');
+  }
+  renderView(view, data);
+}
+
+function renderView(view, data) {
+  switch (view) {
+    case 'home': renderHome(); break;
+    case 'dayList': renderDayList(); break;
+    case 'workout': renderWorkout(); break;
+    case 'activeExercise': renderActiveExercise(); break;
+  }
+}
+
 function renderHome() {
+  currentView = 'home';
   app.innerHTML = `
     <div class="screen home">
       <div class="home-title">ANTIGRAVITY</div>
@@ -146,13 +165,11 @@ function renderHome() {
 function selectGender(gender) {
   currentGender = gender;
   exerciseStates = {};
-  renderDayList();
+  navigate('dayList');
 }
 
 function renderDayList() {
   const days = workouts[currentGender];
-  const progress = loadProgress(currentGender);
-  const hasProgress = Object.keys(progress).length > 0;
 
   let html = `
     <div class="screen">
@@ -160,9 +177,9 @@ function renderDayList() {
   `;
 
   days.forEach(day => {
-    const completed = progress[day.id] === true;
+    const completed = loadProgress(currentGender)[day.id] === true;
     const cardClass = day.restDay ? 'day-card rest' : completed ? 'day-card completed' : 'day-card';
-    const titleClass = day.restText ? 'day-title rest-text' : day.restDay ? 'day-title rest-text' : 'day-title';
+    const titleClass = day.restDay ? 'day-title rest-text' : 'day-title';
 
     html += `
       <div class="${cardClass}" ${!day.restDay ? `onclick="selectDay('${day.id}')"` : ''}>
@@ -178,21 +195,29 @@ function renderDayList() {
 
   html += `
     <div class="btn-row" style="justify-content: center; margin-top: 8px;">
-      <button class="btn-back-days" onclick="renderHome()">← Voltar</button>
-      ${hasProgress ? '<button class="btn-reset" onclick="resetProgress()">Zerar Treinos</button>' : ''}
+      <button class="btn-back-days" onclick="goHome()">← Voltar</button>
     </div>
   </div>`;
   app.innerHTML = html;
+}
+
+function goHome() {
+  if (timerInterval) clearInterval(timerInterval);
+  activeExercise = null;
+  isResting = false;
+  navigate('home');
 }
 
 function selectDay(dayId) {
   currentWorkout = workouts[currentGender].find(d => d.id === dayId);
   exerciseStates = loadExerciseStates(currentGender, dayId);
   activeExercise = null;
-  renderWorkout();
+  navigate('workout');
 }
 
 function renderWorkout() {
+  const hasProgress = Object.keys(loadProgress(currentGender)).length > 0;
+
   let html = `
     <div class="screen">
       <div class="workout-title">${currentWorkout.title}</div>
@@ -221,10 +246,18 @@ function renderWorkout() {
 
   html += `
     <div class="btn-row" style="justify-content: center;">
-      <button class="btn-back-days" onclick="renderDayList()">← Voltar</button>
+      <button class="btn-back-days" onclick="goDayList()">← Voltar</button>
+      ${hasProgress ? '<button class="btn-reset" onclick="resetProgress()">Zerar Treinos</button>' : ''}
     </div>
   </div>`;
   app.innerHTML = html;
+}
+
+function goDayList() {
+  if (timerInterval) clearInterval(timerInterval);
+  activeExercise = null;
+  isResting = false;
+  navigate('dayList');
 }
 
 function startExercise(exerciseId) {
@@ -234,7 +267,7 @@ function startExercise(exerciseId) {
   isResting = false;
   timer = 0;
   if (timerInterval) clearInterval(timerInterval);
-  renderActiveExercise();
+  navigate('activeExercise');
 }
 
 function renderActiveExercise() {
@@ -246,7 +279,7 @@ function renderActiveExercise() {
       <div class="screen active-exercise">
         <div class="active-name">${activeExercise.name}</div>
         <img class="active-image" src="assets/exercises/${activeExercise.image}" alt="${activeExercise.name}" onerror="this.style.display='none'">
-        <div class="active-reps pulse">Repetições: ${activeExercise.reps}</div>
+        <div class="active-reps">Repetições: ${activeExercise.reps}</div>
         <div class="timer-circle">
           <svg viewBox="0 0 200 200">
             <circle class="track" cx="100" cy="100" r="90"/>
@@ -254,7 +287,7 @@ function renderActiveExercise() {
               stroke-dasharray="${circumference}"
               stroke-dashoffset="${offset}"/>
           </svg>
-          <div class="time-text pulse">${formatTime(timer)}</div>
+          <div class="time-text">${formatTime(timer)}</div>
         </div>
         <div class="timer-hint">Prepare-se para a próxima série</div>
         <button class="btn-back" onclick="cancelTimer()">Cancelar</button>
@@ -286,7 +319,7 @@ function cancelExercise() {
   activeExercise = null;
   isResting = false;
   timer = 0;
-  renderWorkout();
+  navigate('workout');
 }
 
 function completeSet() {
@@ -335,10 +368,8 @@ function checkAllCompleted() {
     progress[currentWorkout.id] = true;
     saveProgress(currentGender, progress);
     alert('Parabéns! Você concluiu todos os exercícios de hoje!');
-    renderWorkout();
-  } else {
-    renderWorkout();
   }
+  navigate('workout');
 }
 
 function resetProgress() {
@@ -351,7 +382,21 @@ function resetProgress() {
     }
   }
   keysToRemove.forEach(k => localStorage.removeItem(k));
-  renderDayList();
+  renderWorkout();
 }
 
+window.addEventListener('popstate', (e) => {
+  if (timerInterval) clearInterval(timerInterval);
+  activeExercise = null;
+  isResting = false;
+  timer = 0;
+
+  if (e.state && e.state.view) {
+    renderView(e.state.view, e.state.data);
+  } else {
+    renderHome();
+  }
+});
+
+history.replaceState({ view: 'home' }, '', '');
 renderHome();
