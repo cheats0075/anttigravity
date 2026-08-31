@@ -1,4 +1,4 @@
-const CACHE_NAME = 'anttigravity-v1';
+const CACHE_NAME = 'anttigravity-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -33,7 +33,11 @@ self.addEventListener('fetch', e => {
     );
   } else {
     e.respondWith(
-      caches.match(e.request).then(r => r || fetch(e.request))
+      fetch(e.request).then(resp => {
+        const clone = resp.clone();
+        caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+        return resp;
+      }).catch(() => caches.match(e.request))
     );
   }
 });
