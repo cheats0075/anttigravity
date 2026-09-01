@@ -1347,8 +1347,8 @@ body::before {
 
 .builder-add-btn {
   position: fixed;
-  bottom: 90px;
-  right: calc(50% - 230px);
+  bottom: 160px;
+  right: 24px;
   width: 56px;
   height: 56px;
   border-radius: 50%;
