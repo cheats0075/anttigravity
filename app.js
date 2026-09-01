@@ -30,6 +30,7 @@ let builderExercises = [];
 let editingWorkoutId = null;
 let pickerMode = false;
 let pickerCallback = null;
+let showBuilderForm = false;
 
 let customWorkouts = {};
 
@@ -1044,7 +1045,7 @@ function renderBuilder() {
     </div>`;
   }
 
-  if (editingWorkoutId || builderExercises.length > 0 || builderName) {
+  if (editingWorkoutId || showBuilderForm || builderExercises.length > 0 || builderName) {
     const dayBtns = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo', 'Nenhum'].map(d => {
       const val = d.toLowerCase();
       return `<button class="${builderDay === val ? 'active' : ''}" onclick="setBuilderDay('${val}')">${d}</button>`;
@@ -1079,6 +1080,7 @@ function renderBuilder() {
       <div class="screen builder-screen">
         <div class="builder-header">
           <h2>${editingWorkoutId ? 'Editar Treino' : 'Criar Treino'}</h2>
+          <button class="btn-back-days" onclick="showBuilderForm = false; editingWorkoutId = null; renderBuilder();">← Voltar</button>
           <p>Personalize seu treino</p>
         </div>
         <input class="builder-name-input" type="text" placeholder="Nome do treino (ex: Meu Treino A)" value="${builderName}" oninput="builderName = this.value">
@@ -1109,6 +1111,7 @@ function startNewWorkout() {
   builderName = '';
   builderDay = 'nenhum';
   builderExercises = [];
+  showBuilderForm = true;
   renderBuilder();
 }
 
@@ -1221,6 +1224,7 @@ function saveCustomWorkoutBuilder() {
   saveCustomWorkouts(customWorkouts);
 
   editingWorkoutId = null;
+  showBuilderForm = false;
   builderName = '';
   builderDay = 'nenhum';
   builderExercises = [];
@@ -1235,6 +1239,7 @@ function editCustomWorkout(workoutId) {
   if (!day) return;
 
   editingWorkoutId = workoutId;
+  showBuilderForm = true;
   builderName = day.title;
   builderDay = day.day.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   if (!['segunda','terça','quarta','quinta','sexta','sábado','domingo'].includes(builderDay)) {
