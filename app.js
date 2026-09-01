@@ -1022,7 +1022,7 @@ function showExerciseDetail(exerciseId) {
 function renderBuilder() {
   currentView = 'builder';
   if (pickerMode) {
-    renderExercisePicker();
+    renderLibrary();
     return;
   }
 
