@@ -1346,41 +1346,30 @@ body::before {
 }
 
 .builder-add-btn {
-  position: fixed;
-  bottom: 160px;
-  right: 24px;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  border: none;
-  background: var(--accent-gradient);
-  color: white;
-  font-size: 1.8rem;
+  width: 100%;
+  padding: 14px;
+  border: 2px dashed rgba(233, 69, 96, 0.4);
+  border-radius: 14px;
+  background: rgba(233, 69, 96, 0.08);
+  color: var(--accent);
+  font-size: 0.95rem;
+  font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 4px 20px rgba(233, 69, 96, 0.5);
   transition: all var(--transition);
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  margin: 16px 0;
 }
 
 .builder-add-btn:hover {
-  transform: scale(1.1);
-  box-shadow: 0 6px 30px rgba(233, 69, 96, 0.7);
+  background: rgba(233, 69, 96, 0.15);
+  border-color: var(--accent);
 }
 
 .builder-add-btn:active {
-  transform: scale(0.95);
+  transform: scale(0.98);
 }
 
 .builder-save-btn {
-  position: fixed;
-  bottom: 90px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: calc(100% - 32px);
-  max-width: 468px;
+  width: 100%;
   padding: 16px;
   border: none;
   border-radius: 14px;
@@ -1391,12 +1380,12 @@ body::before {
   cursor: pointer;
   box-shadow: 0 4px 20px rgba(76, 175, 80, 0.4);
   transition: all var(--transition);
-  z-index: 50;
+  margin-bottom: 80px;
 }
 
 .builder-save-btn:hover {
   box-shadow: 0 6px 30px rgba(76, 175, 80, 0.6);
-  transform: translateX(-50%) translateY(-2px);
+  transform: translateY(-2px);
 }
 
 /* ===== PROFILE/CONFIG ===== */

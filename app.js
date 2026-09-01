@@ -1087,7 +1087,7 @@ function renderBuilder() {
         <div class="builder-day-select">${dayBtns}</div>
         <div style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:12px;font-weight:600;">Exercícios (${builderExercises.length})</div>
         <div class="builder-exercise-list">${exItems}</div>
-        <button class="builder-add-btn" onclick="openExercisePicker()">+</button>
+        <button class="builder-add-btn" onclick="openExercisePicker()">+ Adicionar Exercício</button>
         <button class="builder-save-btn" onclick="saveCustomWorkoutBuilder()">💾 Salvar Treino</button>
       </div>
     `;
