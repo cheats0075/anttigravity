@@ -1,5 +1,6 @@
 const DAY_NAMES = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-
+const WEEK_DAYS = ['segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado', 'domingo'];
+const WEEK_DAYS_DISPLAY = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
 const MUSCLE_FILTERS = ['Todos', 'Peito', 'Costas', 'Perna', 'Ombro', 'Bíceps', 'Tríceps', 'Abdome', 'Glúteo', 'Corpo', 'Aeróbico', 'Alongamento', 'CrossFit', 'Funcional', 'Mobilidade'];
 
 const app = document.getElementById('app');
@@ -18,6 +19,7 @@ let workoutDurationInterval = null;
 let currentWeight = '';
 let REST_TIME = 90;
 let currentTab = 'home';
+let exerciseStartTime = null;
 
 let librarySearchQuery = '';
 let libraryActiveFilter = 'Todos';
@@ -25,6 +27,7 @@ let libraryDisplayCount = 30;
 let libraryScrollListener = null;
 
 let builderName = '';
+let builderGender = null;
 let builderDay = 'nenhum';
 let builderExercises = [];
 let editingWorkoutId = null;
@@ -42,10 +45,16 @@ function getExerciseGifPath(exercise) {
 }
 
 function getWorkoutExerciseGif(exercise) {
-  if (exercise.image && exercise.image.endsWith('.gif')) {
+  if (exercise.image) {
+    if (exercise.image.endsWith('.gif')) {
+      const numId = exercise.image.replace('.gif', '');
+      if (!isNaN(numId)) {
+        return `gifs/${numId}.gif`;
+      }
+      return `assets/exercises/${exercise.image}`;
+    }
     return `assets/exercises/${exercise.image}`;
   }
-  if (exercise.image) return `assets/exercises/${exercise.image}`;
   const dbEx = EXERCISES_DB.find(e => e.id === exercise.id || e.name === exercise.name);
   if (dbEx) return getExerciseGifPath(dbEx);
   return '';
@@ -390,30 +399,36 @@ function renderDayList() {
         <div class="day-list-title">${currentGender === 'homem' ? 'HOMEM' : 'MULHER'}</div>
         <button class="btn-history" onclick="showHistory()">Histórico</button>
       </div>
-      <div class="weekly-summary">
-        <div class="weekly-progress">
-          <div class="weekly-label">Esta semana</div>
-          <div class="weekly-bar">
-            <div class="weekly-fill" style="width: ${stats.total > 0 ? (stats.completed / stats.total * 100) : 0}%"></div>
-          </div>
-          <div class="weekly-text">${stats.completed}/${stats.total} treinos</div>
-        </div>
-        ${stats.streak > 0 ? `<div class="streak-badge">🔥 ${stats.streak} semana${stats.streak > 1 ? 's' : ''}</div>` : ''}
-      </div>
   `;
 
-  const defaultDays = workouts[currentGender] || [];
-  const customDays = customWorkouts[currentGender] || [];
+  WEEK_DAYS.forEach((dayKey, idx) => {
+    const dayWorkout = days.find(d => d.dayIndex === (idx + 1) % 7 && !d.restDay);
+    const dayWorkouts = days.filter(d => d.dayIndex === (idx + 1) % 7);
+    const isToday = (idx + 1) % 7 === todayIdx;
 
-  if (defaultDays.length > 0) {
-    html += '<div class="section-label" style="font-size:0.7rem;color:var(--text-muted);margin:12px 0 8px;letter-spacing:1px;font-weight:700;">TREINOS PADRÃO</div>';
-    defaultDays.forEach(day => {
-      html += renderDayCard(day, todayIdx, progress);
-    });
-  }
+    html += `
+      <div class="week-day-row ${isToday ? 'today' : ''}" onclick="${dayWorkout ? `selectDay('${dayWorkout.id}')` : ''}">
+        <div class="week-day-name">${WEEK_DAYS_DISPLAY[idx]}</div>
+        <div class="week-day-info">
+          ${dayWorkouts.length > 0
+            ? dayWorkouts.map(w => `
+              <div class="week-day-workout">
+                <span class="week-day-workout-title">${w.title}</span>
+                <span class="week-day-workout-exercises">${w.exercises.length} ex.</span>
+                ${progress[w.id] ? '<span class="week-day-done">✓</span>' : ''}
+              </div>
+            `).join('')
+            : '<span class="week-day-rest">Descanso</span>'
+          }
+        </div>
+        ${isToday ? '<span class="today-badge-sm">HOJE</span>' : ''}
+      </div>
+    `;
+  });
 
+  const customDays = (currentGender && customWorkouts[currentGender]) || [];
   if (customDays.length > 0) {
-    html += '<div class="section-label" style="font-size:0.7rem;color:var(--secondary);margin:16px 0 8px;letter-spacing:1px;font-weight:700;">⭐ TREINOS PERSONALIZADOS</div>';
+    html += `<div class="section-label-custom">⭐ TREINOS PERSONALIZADOS</div>`;
     customDays.forEach(day => {
       html += renderDayCard(day, todayIdx, progress, true);
     });
@@ -428,7 +443,6 @@ function renderDayCard(day, todayIdx, progress, isCustom) {
   const isToday = day.dayIndex === todayIdx && !day.restDay;
   let cardClass = day.restDay ? 'day-card rest' : completed ? 'day-card completed' : 'day-card';
   if (isToday && !completed) cardClass += ' today';
-  const titleClass = day.restDay ? 'day-title rest-text' : 'day-title';
 
   return `
     <div class="${cardClass}" ${!day.restDay ? `onclick="selectDay('${day.id}')"` : ''}>
@@ -438,7 +452,7 @@ function renderDayCard(day, todayIdx, progress, isCustom) {
         ${isToday && !completed ? '<span class="today-badge">HOJE</span>' : ''}
         ${completed ? '<span class="day-check">✓</span>' : ''}
       </div>
-      <div class="${titleClass}">${day.title}</div>
+      <div class="day-title">${day.title}</div>
       ${!day.restDay ? `<div class="day-count">${day.exercises.length} exercícios</div>` : ''}
       ${isCustom ? `
         <div class="day-actions" onclick="event.stopPropagation()">
@@ -495,14 +509,14 @@ function renderWorkout() {
     html += `
       <div class="exercise-card ${completed ? 'completed' : ''}" onclick="startExercise('${ex.id}')">
         <div class="exercise-row">
-          <img class="exercise-thumb" src="${gif}" alt="${ex.name}" onerror="this.style.display='none'">
+          <img class="exercise-thumb-lg" src="${gif}" alt="${ex.name}" onerror="this.style.display='none'">
           <div class="exercise-info">
             <div class="exercise-name ${completed ? 'done' : ''}">${ex.name}</div>
             ${ex.muscle ? `<div class="exercise-muscle">${ex.muscle}</div>` : ''}
             <div class="exercise-details">${ex.sets}x ${ex.reps}${lastWeight ? ` • ${lastWeight}kg` : ''}</div>
             ${!completed && completedSets > 0 ? `<div class="exercise-progress">Séries: ${completedSets}/${ex.sets}</div>` : ''}
           </div>
-          ${completed ? '<span class="exercise-check">✓</span>' : ''}
+          ${completed ? '<span class="exercise-check done">✓</span>' : '<span class="exercise-check">›</span>'}
         </div>
       </div>
     `;
@@ -535,6 +549,7 @@ function startExercise(exerciseId) {
   isResting = false;
   timer = 0;
   currentWeight = state.lastWeight || '';
+  exerciseStartTime = Date.now();
   if (timerInterval) clearInterval(timerInterval);
 
   if (!workoutStartTime) {
@@ -555,11 +570,17 @@ function startDurationTimer() {
   }, 1000);
 }
 
+function getExerciseElapsed() {
+  if (!exerciseStartTime) return '00:00';
+  return formatDuration(Date.now() - exerciseStartTime);
+}
+
 function renderActiveExercise() {
   if (!activeExercise) return;
   const state = exerciseStates[activeExercise.id] || {};
   const lastWeight = state.lastWeight || '';
   const elapsed = workoutStartTime ? formatDuration(Date.now() - workoutStartTime) : '';
+  const exerciseElapsed = getExerciseElapsed();
   const gif = getWorkoutExerciseGif(activeExercise);
 
   if (isResting) {
@@ -567,53 +588,102 @@ function renderActiveExercise() {
     const offset = circumference * (1 - timer / REST_TIME);
 
     app.innerHTML = `
-      <div class="screen active-exercise">
-        ${elapsed ? `<div class="workout-timer-bar" id="workout-duration">${elapsed}</div>` : ''}
-        <div class="active-name">${activeExercise.name}</div>
-        <img class="active-image" src="${gif}" alt="${activeExercise.name}" onerror="this.style.display='none'">
-        <div class="active-reps">Repetições: ${activeExercise.reps}</div>
-        ${activeExercise.tips ? `<div class="active-tips">💡 ${activeExercise.tips}</div>` : ''}
-        <div class="timer-circle">
-          <svg viewBox="0 0 200 200">
-            <circle class="track" cx="100" cy="100" r="90"/>
-            <circle class="progress" cx="100" cy="100" r="90"
-              stroke-dasharray="${circumference}"
-              stroke-dashoffset="${offset}"/>
-          </svg>
-          <div class="time-text">${formatTime(timer)}</div>
+      <div class="screen csa-exercise">
+        <div class="csa-header">
+          <button class="csa-back" onclick="cancelTimer()">←</button>
+          <div class="csa-title">Execução</div>
+          <div class="csa-timer" id="workout-duration">${exerciseElapsed}</div>
         </div>
-        <div class="timer-hint">Prepare-se para a próxima série</div>
-        <button class="btn-settings" onclick="showRestTimeSettings()">⚙️ Descanso: ${REST_TIME}s</button>
-        <button class="btn-back" onclick="cancelTimer()">Cancelar</button>
+        <div class="csa-card">
+          <div class="csa-exercise-name">${activeExercise.name}</div>
+          ${activeExercise.muscle ? `<div class="csa-muscle-badge">${activeExercise.muscle}</div>` : ''}
+          <div class="csa-stats-row">
+            <span>Séries: ${activeExercise.sets}</span>
+            <span>Descanso: ${REST_TIME}s</span>
+          </div>
+          <img class="csa-exercise-image" src="${gif}" alt="${activeExercise.name}" onerror="this.style.display='none'">
+          <div class="csa-reps-info">
+            <div class="csa-reps-count">${activeExercise.reps}</div>
+            <div class="csa-reps-label">Repetições</div>
+          </div>
+          <div class="csa-set-indicators">
+            ${Array.from({length: activeExercise.sets}, (_, i) => {
+              const setDone = i < currentSet;
+              const setDoing = i === currentSet;
+              return `<div class="csa-set-dot ${setDone ? 'done' : ''} ${setDoing ? 'active' : ''}">${setDone ? '✓' : (i + 1)}</div>`;
+            }).join('')}
+          </div>
+        </div>
+        <div class="csa-rest-timer">
+          <div class="csa-rest-circle">
+            <svg viewBox="0 0 200 200">
+              <circle class="csa-rest-track" cx="100" cy="100" r="90"/>
+              <circle class="csa-rest-progress" cx="100" cy="100" r="90"
+                stroke-dasharray="${circumference}"
+                stroke-dashoffset="${offset}"/>
+            </svg>
+            <div class="csa-rest-text">${formatTime(timer)}</div>
+          </div>
+          <div class="csa-rest-hint">Prepare-se para a próxima série</div>
+        </div>
+        <div class="csa-bottom-nav">
+          <button class="csa-nav-arrow" onclick="cancelTimer()">←</button>
+          <button class="csa-check-btn rest-mode" onclick="cancelTimer()">
+            <span>Cancelar</span>
+          </button>
+          <div class="csa-nav-arrow"></div>
+        </div>
       </div>
     `;
   } else {
-    const weightOptions = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100];
-
     app.innerHTML = `
-      <div class="screen active-exercise">
-        ${elapsed ? `<div class="workout-timer-bar" id="workout-duration">${elapsed}</div>` : ''}
-        <div class="active-name">${activeExercise.name}</div>
-        <img class="active-image" src="${gif}" alt="${activeExercise.name}" onerror="this.style.display='none'">
-        <div class="active-reps">Repetições: ${activeExercise.reps}</div>
-        ${activeExercise.tips ? `<div class="active-tips">💡 ${activeExercise.tips}</div>` : ''}
-        <div class="set-info">Série ${currentSet + 1} de ${activeExercise.sets}</div>
-        <div class="weight-input-group">
-          <label class="weight-label">Carga (kg)</label>
-          <div class="weight-controls">
-            <button class="weight-btn" onclick="adjustWeight(-2.5)">−</button>
-            <input type="number" class="weight-field" id="weightInput" value="${currentWeight}" placeholder="0" step="0.5" min="0" onchange="updateWeight(this.value)" oninput="updateWeight(this.value)">
-            <button class="weight-btn" onclick="adjustWeight(2.5)">+</button>
+      <div class="screen csa-exercise">
+        <div class="csa-header">
+          <button class="csa-back" onclick="cancelExercise()">←</button>
+          <div class="csa-title">Execução</div>
+          <div class="csa-timer" id="workout-duration">${exerciseElapsed}</div>
+        </div>
+        <div class="csa-card">
+          <div class="csa-exercise-name">${activeExercise.name}</div>
+          ${activeExercise.muscle ? `<div class="csa-muscle-badge">${activeExercise.muscle}</div>` : ''}
+          <div class="csa-stats-row">
+            <span>Séries: ${activeExercise.sets}</span>
+            <span>Descanso: ${REST_TIME}s</span>
           </div>
-          <div class="weight-quick">
-            ${weightOptions.map(w =>
-              `<button class="weight-chip ${currentWeight == w ? 'active' : ''}" onclick="setWeight(${w})">${w}</button>`
-            ).join('')}
+          <img class="csa-exercise-image" src="${gif}" alt="${activeExercise.name}" onerror="this.style.display='none'">
+          <div class="csa-reps-info">
+            <div class="csa-reps-count">${activeExercise.reps}</div>
+            <div class="csa-reps-label">Repetições</div>
+          </div>
+          <div class="csa-set-indicators">
+            ${Array.from({length: activeExercise.sets}, (_, i) => {
+              const setDone = i < currentSet;
+              const setDoing = i === currentSet;
+              return `<div class="csa-set-dot ${setDone ? 'done' : ''} ${setDoing ? 'active' : ''}">${setDone ? '✓' : (i + 1)}</div>`;
+            }).join('')}
+          </div>
+          <div class="csa-weight-section">
+            <div class="csa-weight-label">Carga</div>
+            <div class="csa-weight-row">
+              <button class="csa-weight-btn" onclick="adjustWeight(-2.5)">−</button>
+              <input type="number" class="csa-weight-field" id="weightInput" value="${currentWeight}" placeholder="0" step="0.5" min="0" onchange="updateWeight(this.value)" oninput="updateWeight(this.value)">
+              <button class="csa-weight-btn" onclick="adjustWeight(2.5)">+</button>
+              <span class="csa-weight-unit">kg</span>
+            </div>
           </div>
         </div>
-        <button class="btn-settings" onclick="showRestTimeSettings()">⚙️ Descanso: ${REST_TIME}s</button>
-        <button class="btn-done" onclick="completeSet()">CONCLUÍDO ✓</button>
-        <button class="btn-back" onclick="cancelExercise()">Voltar</button>
+        ${activeExercise.tips ? `<div class="csa-tips">💡 ${activeExercise.tips}</div>` : ''}
+        <button class="csa-settings-btn" onclick="showRestTimeSettings()">⚙️ Alterar descanso</button>
+        <div class="csa-bottom-nav">
+          <button class="csa-nav-arrow" onclick="cancelExercise()">←</button>
+          <button class="csa-check-btn" onclick="completeSet()">
+            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="white" stroke-width="3">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <span>Realizado</span>
+          </button>
+          <div class="csa-nav-arrow"></div>
+        </div>
       </div>
     `;
   }
@@ -640,8 +710,8 @@ function updateWeight(val) {
 function updateTimerDisplay() {
   const circumference = 2 * Math.PI * 90;
   const offset = circumference * (1 - timer / REST_TIME);
-  const timeText = document.querySelector('.time-text');
-  const progressCircle = document.querySelector('.timer-circle .progress');
+  const timeText = document.querySelector('.csa-rest-text');
+  const progressCircle = document.querySelector('.csa-rest-progress');
   if (timeText) timeText.textContent = formatTime(timer);
   if (progressCircle) progressCircle.setAttribute('stroke-dashoffset', offset);
 }
@@ -658,6 +728,7 @@ function cancelExercise() {
   activeExercise = null;
   isResting = false;
   timer = 0;
+  exerciseStartTime = null;
   navigate('workout', { dayId: currentWorkout?.id });
 }
 
@@ -673,6 +744,7 @@ function completeSet() {
     saveExerciseStates(currentGender, currentWorkout.id, exerciseStates);
     activeExercise = null;
     currentSet = 0;
+    exerciseStartTime = null;
     checkAllCompleted();
   } else {
     const setState = { completed: false, completedSets: nextSet };
@@ -1084,6 +1156,11 @@ function renderBuilder() {
           <p>Personalize seu treino</p>
         </div>
         <input class="builder-name-input" type="text" placeholder="Nome do treino (ex: Meu Treino A)" value="${builderName}" oninput="builderName = this.value">
+        <div style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:8px;font-weight:600;">Para quem é o treino?</div>
+        <div class="builder-gender-select">
+          <button class="${builderGender === 'homem' ? 'active' : ''}" onclick="setBuilderGender('homem')">HOMEM</button>
+          <button class="${builderGender === 'mulher' ? 'active' : ''}" onclick="setBuilderGender('mulher')">MULHER</button>
+        </div>
         <div class="builder-day-select">${dayBtns}</div>
         <div style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:12px;font-weight:600;">Exercícios (${builderExercises.length})</div>
         <div class="builder-exercise-list">${exItems}</div>
@@ -1109,6 +1186,7 @@ function renderBuilder() {
 function startNewWorkout() {
   editingWorkoutId = null;
   builderName = '';
+  builderGender = null;
   builderDay = 'nenhum';
   builderExercises = [];
   showBuilderForm = true;
@@ -1117,6 +1195,11 @@ function startNewWorkout() {
 
 function setBuilderDay(day) {
   builderDay = day;
+  renderBuilder();
+}
+
+function setBuilderGender(gender) {
+  builderGender = gender;
   renderBuilder();
 }
 
@@ -1178,11 +1261,14 @@ function saveCustomWorkoutBuilder() {
     alert('Digite um nome para o treino.');
     return;
   }
+  if (!builderGender) {
+    alert('Selecione para quem é o treino (Homem ou Mulher).');
+    return;
+  }
   if (builderExercises.length === 0) {
     alert('Adicione pelo menos um exercício.');
     return;
   }
-  if (!currentGender) currentGender = 'homem';
 
   const exercises = builderExercises.map((ex, i) => ({
     id: `custom_${Date.now()}_${i}`,
@@ -1212,13 +1298,13 @@ function saveCustomWorkoutBuilder() {
     exercises: exercises
   };
 
-  if (!customWorkouts[currentGender]) customWorkouts[currentGender] = [];
+  if (!customWorkouts[builderGender]) customWorkouts[builderGender] = [];
 
   if (editingWorkoutId) {
-    const idx = customWorkouts[currentGender].findIndex(d => d.id === editingWorkoutId);
-    if (idx >= 0) customWorkouts[currentGender][idx] = workout;
+    const idx = customWorkouts[builderGender].findIndex(d => d.id === editingWorkoutId);
+    if (idx >= 0) customWorkouts[builderGender][idx] = workout;
   } else {
-    customWorkouts[currentGender].push(workout);
+    customWorkouts[builderGender].push(workout);
   }
 
   saveCustomWorkouts(customWorkouts);
@@ -1226,6 +1312,7 @@ function saveCustomWorkoutBuilder() {
   editingWorkoutId = null;
   showBuilderForm = false;
   builderName = '';
+  builderGender = null;
   builderDay = 'nenhum';
   builderExercises = [];
 
@@ -1241,6 +1328,7 @@ function editCustomWorkout(workoutId) {
   editingWorkoutId = workoutId;
   showBuilderForm = true;
   builderName = day.title;
+  builderGender = currentGender;
   builderDay = day.day.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   if (!['segunda','terça','quarta','quinta','sexta','sábado','domingo'].includes(builderDay)) {
     builderDay = 'nenhum';
