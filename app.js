@@ -33,6 +33,7 @@ let builderExercises = [];
 let editingWorkoutId = null;
 let pickerMode = false;
 let pickerCallback = null;
+let addingToWorkout = false;
 let showBuilderForm = false;
 
 let customWorkouts = {};
@@ -499,12 +500,13 @@ function renderWorkout() {
       </div>
   `;
 
-  currentWorkout.exercises.forEach(ex => {
+  currentWorkout.exercises.forEach((ex, idx) => {
     const state = exerciseStates[ex.id] || {};
     const completed = state.completed === true;
     const completedSets = state.completedSets || 0;
     const lastWeight = state.lastWeight || '';
     const gif = getWorkoutExerciseGif(ex);
+    const isCustom = currentWorkout.id.startsWith('cw_');
 
     html += `
       <div class="exercise-card ${completed ? 'completed' : ''}" onclick="startExercise('${ex.id}')">
@@ -516,6 +518,7 @@ function renderWorkout() {
             <div class="exercise-details">${ex.sets}x ${ex.reps}${lastWeight ? ` • ${lastWeight}kg` : ''}</div>
             ${!completed && completedSets > 0 ? `<div class="exercise-progress">Séries: ${completedSets}/${ex.sets}</div>` : ''}
           </div>
+          ${isCustom ? `<button class="exercise-edit-btn" onclick="event.stopPropagation(); editCustomExercise(${idx})">✏️</button>` : ''}
           ${completed ? '<span class="exercise-check done">✓</span>' : '<span class="exercise-check">›</span>'}
         </div>
       </div>
@@ -525,12 +528,12 @@ function renderWorkout() {
   html += `
     <div class="btn-row" style="justify-content: center;">
       <button class="btn-back-days" onclick="goDayList()">← Voltar</button>
-      ${currentWorkout.id.startsWith('cw_') ? `<button class="btn-reset" style="background:var(--accent);" onclick="editCustomWorkout('${currentWorkout.id}')">✏️ Editar</button>` : ''}
       <button class="btn-reset" onclick="resetProgress()">Zerar Treinos</button>
     </div>
+    ${currentWorkout.id.startsWith('cw_') ? `
     <div class="btn-row" style="justify-content: center; margin-top: 8px;">
-      <button class="btn-reset" style="background:var(--accent);" onclick="switchTab('builder')">+ Adicionar Treino</button>
-    </div>
+      <button class="btn-reset" style="background:var(--accent);" onclick="openAddToWorkoutPicker()">+ Adicionar Exercício</button>
+    </div>` : ''}
   </div>`;
   app.innerHTML = html;
 }
@@ -542,6 +545,54 @@ function goDayList() {
   isResting = false;
   workoutStartTime = null;
   navigate('dayList');
+}
+
+function editCustomExercise(idx) {
+  if (!currentWorkout || !currentWorkout.id.startsWith('cw_')) return;
+  const ex = currentWorkout.exercises[idx];
+  if (!ex) return;
+  const newSets = prompt('Séries:', ex.sets);
+  if (newSets === null) return;
+  const newReps = prompt('Repetições:', ex.reps);
+  if (newReps === null) return;
+  ex.sets = parseInt(newSets) || ex.sets;
+  ex.reps = newReps || ex.reps;
+  const customDays = customWorkouts[currentGender] || [];
+  const wIdx = customDays.findIndex(d => d.id === currentWorkout.id);
+  if (wIdx >= 0) {
+    customWorkouts[currentGender][wIdx] = currentWorkout;
+    saveCustomWorkouts(customWorkouts);
+  }
+  renderWorkout();
+}
+
+function openAddToWorkoutPicker() {
+  addingToWorkout = true;
+  openExercisePicker();
+}
+
+function addExerciseToCurrentWorkout(exerciseId) {
+  const db = getExercisesDB();
+  const ex = db.find(e => e.id === exerciseId);
+  if (!ex || !currentWorkout) return;
+  currentWorkout.exercises.push({
+    id: `custom_${Date.now()}`,
+    name: ex.name,
+    sets: 3,
+    reps: '10',
+    image: `${ex.gif}.gif`,
+    muscle: ex.muscle,
+    tips: ''
+  });
+  const customDays = customWorkouts[currentGender] || [];
+  const wIdx = customDays.findIndex(d => d.id === currentWorkout.id);
+  if (wIdx >= 0) {
+    customWorkouts[currentGender][wIdx] = currentWorkout;
+    saveCustomWorkouts(customWorkouts);
+  }
+  addingToWorkout = false;
+  closePicker();
+  renderWorkout();
 }
 
 function startExercise(exerciseId) {
@@ -1219,10 +1270,19 @@ function openExercisePicker() {
 function closePicker() {
   pickerMode = false;
   pickerCallback = null;
-  renderBuilder();
+  addingToWorkout = false;
+  if (currentView === 'builder') {
+    renderBuilder();
+  } else if (currentWorkout) {
+    renderWorkout();
+  }
 }
 
 function addExerciseFromPicker(exerciseId) {
+  if (addingToWorkout) {
+    addExerciseToCurrentWorkout(exerciseId);
+    return;
+  }
   const db = getExercisesDB();
   const ex = db.find(e => e.id === exerciseId);
   if (!ex) return;

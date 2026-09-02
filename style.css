@@ -598,6 +598,26 @@ body {
   box-shadow: 0 0 10px var(--success-glow);
 }
 
+.exercise-edit-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #e8eaed;
+  background: var(--bg-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  transition: all var(--transition);
+}
+
+.exercise-edit-btn:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
 /* ===== CSA ALUNO STYLE ACTIVE EXERCISE ===== */
 .csa-exercise {
   display: flex;
