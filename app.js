@@ -35,6 +35,7 @@ let pickerMode = false;
 let pickerCallback = null;
 let addingToWorkout = false;
 let swappingExerciseIdx = -1;
+let pickerOrigin = 'builder';
 let showBuilderForm = false;
 
 let customWorkouts = {};
@@ -1262,11 +1263,12 @@ function setBuilderGender(gender) {
 
 function openExercisePicker() {
   pickerMode = true;
+  pickerOrigin = (addingToWorkout || swappingExerciseIdx >= 0) ? 'workout' : 'builder';
   pickerCallback = null;
   librarySearchQuery = '';
   libraryActiveFilter = 'Todos';
   libraryDisplayCount = 30;
-  renderBuilder();
+  renderLibrary();
 }
 
 function closePicker() {
@@ -1274,11 +1276,17 @@ function closePicker() {
   pickerCallback = null;
   addingToWorkout = false;
   swappingExerciseIdx = -1;
-  if (currentView === 'builder') {
+  if (pickerOrigin === 'workout' && currentWorkout) {
+    currentView = 'workout';
+    renderWorkout();
+  } else if (currentView === 'builder' || pickerOrigin === 'builder') {
+    currentView = 'builder';
     renderBuilder();
-  } else if (currentWorkout) {
+  } else {
+    currentView = 'workout';
     renderWorkout();
   }
+  pickerOrigin = 'builder';
 }
 
 function addExerciseFromPicker(exerciseId) {
