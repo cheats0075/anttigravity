@@ -572,7 +572,6 @@ function saveWorkoutToStorage() {
     }
   }
 }
-}
 
 function openAddToWorkoutPicker() {
   addingToWorkout = true;
