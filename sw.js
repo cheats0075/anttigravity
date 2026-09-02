@@ -1,4 +1,4 @@
-const CACHE_NAME = 'anttigravity-v6';
+const CACHE_NAME = 'anttigravity-v7';
 const ASSETS = [
   './',
   './index.html',
