@@ -525,7 +525,11 @@ function renderWorkout() {
   html += `
     <div class="btn-row" style="justify-content: center;">
       <button class="btn-back-days" onclick="goDayList()">← Voltar</button>
+      ${currentWorkout.id.startsWith('cw_') ? `<button class="btn-reset" style="background:var(--accent);" onclick="editCustomWorkout('${currentWorkout.id}')">✏️ Editar</button>` : ''}
       <button class="btn-reset" onclick="resetProgress()">Zerar Treinos</button>
+    </div>
+    <div class="btn-row" style="justify-content: center; margin-top: 8px;">
+      <button class="btn-reset" style="background:var(--accent);" onclick="switchTab('builder')">+ Adicionar Treino</button>
     </div>
   </div>`;
   app.innerHTML = html;
