@@ -2153,6 +2153,107 @@ body {
   transform: translateX(20px);
 }
 
+/* ===== SCHEDULE EXERCISES ===== */
+.schedule-day-exercises {
+  margin: -2px 0 10px 0;
+  padding: 10px 12px;
+  background: var(--bg-card);
+  border-radius: 0 0 8px 8px;
+  border-top: 1px dashed var(--border-card);
+}
+
+.schedule-day-title-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border-card);
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  background: var(--bg-base);
+  color: var(--text-primary);
+}
+
+.schedule-exercise-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--bg-base);
+  border-radius: 6px;
+  margin-bottom: 4px;
+}
+
+.schedule-ex-gif {
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.schedule-ex-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.schedule-ex-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.schedule-ex-detail {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.schedule-ex-remove {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: var(--danger);
+  color: white;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.schedule-empty-day {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.schedule-add-btn {
+  width: 100%;
+  padding: 8px;
+  border: 2px dashed var(--border-card);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 4px;
+  transition: all var(--transition);
+}
+
+.schedule-add-btn:hover {
+  border-color: var(--accent);
+  background: rgba(37, 99, 235, 0.05);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

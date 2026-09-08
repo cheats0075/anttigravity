@@ -37,6 +37,8 @@ let addingToWorkout = false;
 let swappingExerciseIdx = -1;
 let pickerOrigin = 'builder';
 let showBuilderForm = false;
+let adminScheduleUserId = null;
+let adminScheduleDayNum = null;
 
 let customWorkouts = {};
 
@@ -193,7 +195,34 @@ function getAllWorkouts() {
 }
 
 function mergeWorkouts() {
-  return getAllWorkouts();
+  const all = getAllWorkouts();
+  if (!currentUserId) return all;
+
+  const schedule = remoteConfig.weeklySchedule || {};
+  const userSchedule = schedule[String(currentUserId)];
+  if (!userSchedule) return all;
+
+  for (const gender of ['homem', 'mulher']) {
+    const defaults = all[gender] || [];
+    const updated = defaults.map(day => {
+      const dayData = userSchedule[String(day.dayIndex)];
+      if (!dayData) return day;
+      if (dayData.active === false) {
+        return { ...day, hidden: true };
+      }
+      if (dayData.exercises && dayData.exercises.length > 0) {
+        return {
+          ...day,
+          title: dayData.title || day.title,
+          exercises: dayData.exercises
+        };
+      }
+      return day;
+    });
+    all[gender] = updated.filter(d => !d.hidden);
+  }
+
+  return all;
 }
 
 function loadRestTime() {
@@ -1551,7 +1580,11 @@ function setBuilderGender(gender) {
 
 function openExercisePicker() {
   pickerMode = true;
-  pickerOrigin = (addingToWorkout || swappingExerciseIdx >= 0) ? 'workout' : 'builder';
+  if (adminScheduleUserId !== null) {
+    pickerOrigin = 'adminSchedule';
+  } else {
+    pickerOrigin = (addingToWorkout || swappingExerciseIdx >= 0) ? 'workout' : 'builder';
+  }
   pickerCallback = null;
   librarySearchQuery = '';
   libraryActiveFilter = 'Todos';
@@ -1564,6 +1597,13 @@ function closePicker() {
   pickerCallback = null;
   addingToWorkout = false;
   swappingExerciseIdx = -1;
+  if (pickerOrigin === 'adminSchedule') {
+    adminScheduleUserId = null;
+    adminScheduleDayNum = null;
+    pickerOrigin = 'builder';
+    renderAdmin();
+    return;
+  }
   if (pickerOrigin === 'workout' && currentWorkout) {
     currentView = 'workout';
     renderWorkout();
@@ -1581,6 +1621,11 @@ function addExerciseFromPicker(exerciseId) {
   const db = getExercisesDB();
   const ex = db.find(e => e.id === exerciseId);
   if (!ex) return;
+
+  if (pickerOrigin === 'adminSchedule') {
+    saveAdminScheduleExercise(exerciseId);
+    return;
+  }
 
   if (swappingExerciseIdx >= 0 && currentWorkout) {
     const oldEx = currentWorkout.exercises[swappingExerciseIdx];
@@ -2004,7 +2049,39 @@ function loadUserSchedule() {
 
   container.innerHTML = WEEK_DAYS_DISPLAY.map((day, idx) => {
     const dayNum = (idx + 1) % 7;
-    const active = userSchedule[String(dayNum)] !== false;
+    const dayData = userSchedule[String(dayNum)];
+    const active = dayData === undefined ? true : (dayData.active !== false);
+    const exercises = (dayData && dayData.exercises) || [];
+    const title = (dayData && dayData.title) || '';
+    const hasCustom = exercises.length > 0;
+
+    let exercisesHtml = '';
+    if (active) {
+      exercisesHtml = `
+        <div class="schedule-day-exercises">
+          ${hasCustom ? `
+            <input class="schedule-day-title-input" type="text" value="${title}" placeholder="Nome do treino" onchange="updateAdminDayTitle(${uid}, ${dayNum}, this.value)">
+            ${exercises.map((ex, i) => `
+              <div class="schedule-exercise-item">
+                <img class="schedule-ex-gif" src="https://cdnh.sistemasca.com/arquivos/exercicios/${ex.id}.gif" alt="${ex.name}" onerror="this.style.display='none'">
+                <div class="schedule-ex-info">
+                  <div class="schedule-ex-name">${ex.name}</div>
+                  <div class="schedule-ex-detail">${ex.sets}x ${ex.reps} — ${ex.muscle || ''}</div>
+                </div>
+                <button class="schedule-ex-remove" onclick="removeAdminScheduleExercise(${uid}, ${dayNum}, ${i})">✕</button>
+              </div>
+            `).join('')}
+            <button class="schedule-add-btn" onclick="openAdminSchedulePicker(${uid}, ${dayNum})">+ Adicionar</button>
+          ` : `
+            <div class="schedule-empty-day">
+              <span>Usa treino padrão</span>
+              <button class="schedule-add-btn" onclick="openAdminSchedulePicker(${uid}, ${dayNum})">✏️ Criar Treino</button>
+            </div>
+          `}
+        </div>
+      `;
+    }
+
     return `
       <div class="schedule-day-row">
         <span class="schedule-day-name">${day}</span>
@@ -2013,6 +2090,7 @@ function loadUserSchedule() {
           <span class="schedule-slider"></span>
         </label>
       </div>
+      ${exercisesHtml}
     `;
   }).join('');
 }
@@ -2020,7 +2098,63 @@ function loadUserSchedule() {
 function toggleScheduleDay(uid, dayNum, active) {
   if (!remoteConfig.weeklySchedule) remoteConfig.weeklySchedule = {};
   if (!remoteConfig.weeklySchedule[String(uid)]) remoteConfig.weeklySchedule[String(uid)] = {};
-  remoteConfig.weeklySchedule[String(uid)][String(dayNum)] = active;
+  if (!remoteConfig.weeklySchedule[String(uid)][String(dayNum)]) {
+    remoteConfig.weeklySchedule[String(uid)][String(dayNum)] = { active: true, exercises: [] };
+  }
+  remoteConfig.weeklySchedule[String(uid)][String(dayNum)].active = active;
+  saveRemoteConfig();
+  loadUserSchedule();
+}
+
+function openAdminSchedulePicker(uid, dayNum) {
+  adminScheduleUserId = uid;
+  adminScheduleDayNum = dayNum;
+  openExercisePicker();
+}
+
+function saveAdminScheduleExercise(exerciseId) {
+  const db = getExercisesDB();
+  const ex = db.find(e => e.id === exerciseId);
+  if (!ex || !adminScheduleUserId) return;
+
+  if (!remoteConfig.weeklySchedule) remoteConfig.weeklySchedule = {};
+  if (!remoteConfig.weeklySchedule[String(adminScheduleUserId)]) remoteConfig.weeklySchedule[String(adminScheduleUserId)] = {};
+  const dayKey = String(adminScheduleDayNum);
+  if (!remoteConfig.weeklySchedule[String(adminScheduleUserId)][dayKey]) {
+    remoteConfig.weeklySchedule[String(adminScheduleUserId)][dayKey] = { active: true, title: '', exercises: [] };
+  }
+  const dayData = remoteConfig.weeklySchedule[String(adminScheduleUserId)][dayKey];
+  if (!dayData.exercises) dayData.exercises = [];
+
+  dayData.exercises.push({
+    id: `custom_${Date.now()}`,
+    name: ex.name,
+    sets: 3,
+    reps: '8-12',
+    image: `${ex.gif}.gif`,
+    muscle: ex.muscle,
+    tips: ''
+  });
+  saveRemoteConfig();
+}
+
+function removeAdminScheduleExercise(uid, dayNum, idx) {
+  if (!remoteConfig.weeklySchedule) return;
+  const dayData = remoteConfig.weeklySchedule[String(uid)]?.[String(dayNum)];
+  if (!dayData || !dayData.exercises) return;
+  dayData.exercises.splice(idx, 1);
+  if (dayData.exercises.length === 0 && !dayData.title) {
+    delete remoteConfig.weeklySchedule[String(uid)][String(dayNum)];
+  }
+  saveRemoteConfig();
+  loadUserSchedule();
+}
+
+function updateAdminDayTitle(uid, dayNum, value) {
+  if (!remoteConfig.weeklySchedule) return;
+  const dayData = remoteConfig.weeklySchedule[String(uid)]?.[String(dayNum)];
+  if (!dayData) return;
+  dayData.title = value;
   saveRemoteConfig();
 }
 
