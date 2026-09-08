@@ -1,6 +1,7 @@
 {
   "users": [
-    { "id": 387, "password": "0075", "name": "Admin", "isAdmin": true }
+    { "id": 387, "password": "0075", "name": "Admin", "isAdmin": true },
+    { "id": 2, "password": "0716", "name": "Usuario 2", "isAdmin": false }
   ],
   "exerciseEdits": {},
   "weeklySchedule": {}
