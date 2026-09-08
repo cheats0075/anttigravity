@@ -23,6 +23,18 @@
     "100": {
       "name": "abdominal"
     },
+    "101": {
+      "name": "abdominal crunch"
+    },
+    "102": {
+      "name": "abdominal curl-up"
+    },
+    "103": {
+      "name": "abdominal sit-up"
+    },
+    "104": {
+      "name": "abdominal oblico"
+    },
     "112": {
       "muscle": "Antebraço"
     },
