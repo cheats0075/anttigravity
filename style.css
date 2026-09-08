@@ -360,6 +360,16 @@ body {
   font-style: italic;
 }
 
+.week-day-row.has-exercises {
+  border-color: var(--secondary);
+  border-left: 4px solid var(--secondary);
+  background: rgba(245, 158, 11, 0.04);
+}
+
+.week-day-row.has-exercises .week-day-name {
+  color: var(--secondary);
+}
+
 .today-badge-sm {
   background: var(--accent);
   color: white;

@@ -152,6 +152,46 @@ function saveCustomWorkouts(data) {
   customWorkouts = data;
 }
 
+function loadRestDayExercises(gender) {
+  try {
+    const saved = localStorage.getItem(`restday_exercises_${gender}`);
+    return saved ? JSON.parse(saved) : {};
+  } catch (e) { return {}; }
+}
+
+function saveRestDayExercises(gender, data) {
+  try { localStorage.setItem(`restday_exercises_${gender}`, JSON.stringify(data)); } catch (e) {}
+}
+
+function isRestDayWithExercises(dayId, gender) {
+  if (!gender) return false;
+  const restData = loadRestDayExercises(gender);
+  return restData[dayId] && restData[dayId].exercises && restData[dayId].exercises.length > 0;
+}
+
+function getRestDayWorkout(day) {
+  const restData = loadRestDayExercises(currentGender);
+  const saved = restData[day.id];
+  if (saved && saved.exercises && saved.exercises.length > 0) {
+    return {
+      id: day.id,
+      day: day.day,
+      dayIndex: day.dayIndex,
+      title: saved.title || 'Treino Livre',
+      restDay: false,
+      exercises: saved.exercises
+    };
+  }
+  return {
+    id: day.id,
+    day: day.day,
+    dayIndex: day.dayIndex,
+    title: 'Treino Livre',
+    restDay: false,
+    exercises: []
+  };
+}
+
 function formatTime(seconds) {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
@@ -176,13 +216,35 @@ function getTodayWorkout() {
   const genderWorkouts = all[currentGender];
   if (!genderWorkouts) return null;
   const todayIdx = getTodayIndex();
-  return genderWorkouts.find(d => d.dayIndex === todayIdx && !d.restDay);
+  const todayWorkout = genderWorkouts.find(d => d.dayIndex === todayIdx && !d.restDay);
+  if (todayWorkout) return todayWorkout;
+
+  const restDay = genderWorkouts.find(d => d.dayIndex === todayIdx && d.restDay);
+  if (restDay) {
+    const restData = loadRestDayExercises(currentGender);
+    const saved = restData[restDay.id];
+    if (saved && saved.exercises && saved.exercises.length > 0) {
+      return {
+        id: restDay.id,
+        day: restDay.day,
+        dayIndex: restDay.dayIndex,
+        title: saved.title || 'Treino Livre',
+        restDay: false,
+        exercises: saved.exercises
+      };
+    }
+  }
+  return null;
 }
 
 function getWeeklyStats() {
   if (!currentGender) return { completed: 0, total: 0, streak: 0 };
   const all = mergeWorkouts();
   const days = (all[currentGender] || []).filter(d => !d.restDay);
+  const restDays = (all[currentGender] || []).filter(d => d.restDay);
+  const restDayData = loadRestDayExercises(currentGender);
+  const restDaysWithExercises = restDays.filter(d => restDayData[d.id] && restDayData[d.id].exercises && restDayData[d.id].exercises.length > 0);
+  const allActiveDays = [...days, ...restDaysWithExercises];
   const progress = loadProgress(currentGender);
 
   const now = new Date();
@@ -191,7 +253,7 @@ function getWeeklyStats() {
   startOfWeek.setHours(0, 0, 0, 0);
 
   let completedThisWeek = 0;
-  days.forEach(d => {
+  allActiveDays.forEach(d => {
     if (progress[d.id]) {
       const saved = localStorage.getItem(`workout_date_${currentGender}_${d.id}`);
       if (saved) {
@@ -212,7 +274,7 @@ function getWeeklyStats() {
     wEnd.setDate(wEnd.getDate() + 7);
 
     let weekComplete = true;
-    days.forEach(d => {
+    allActiveDays.forEach(d => {
       if (progress[d.id]) {
         const saved = localStorage.getItem(`workout_date_${currentGender}_${d.id}`);
         if (saved) {
@@ -233,7 +295,7 @@ function getWeeklyStats() {
     else break;
   }
 
-  return { completed: completedThisWeek, total: days.length, streak };
+  return { completed: completedThisWeek, total: allActiveDays.length, streak };
 }
 
 function buildUrl(view, gender, dayId) {
@@ -405,12 +467,22 @@ function renderDayList() {
   `;
 
   WEEK_DAYS.forEach((dayKey, idx) => {
-    const dayWorkout = days.find(d => d.dayIndex === (idx + 1) % 7 && !d.restDay);
-    const dayWorkouts = days.filter(d => d.dayIndex === (idx + 1) % 7);
-    const isToday = (idx + 1) % 7 === todayIdx;
+    const dayIndex = (idx + 1) % 7;
+    const dayWorkout = days.find(d => d.dayIndex === dayIndex && !d.restDay);
+    const dayWorkouts = days.filter(d => d.dayIndex === dayIndex);
+    const restDay = days.find(d => d.dayIndex === dayIndex && d.restDay);
+    const isToday = dayIndex === todayIdx;
+    const hasRestExercises = restDay && isRestDayWithExercises(restDay.id, currentGender);
+
+    let onclickAttr = '';
+    if (dayWorkout) {
+      onclickAttr = `selectDay('${dayWorkout.id}')`;
+    } else if (restDay) {
+      onclickAttr = `selectRestDay('${restDay.id}')`;
+    }
 
     html += `
-      <div class="week-day-row ${isToday ? 'today' : ''}" onclick="${dayWorkout ? `selectDay('${dayWorkout.id}')` : ''}">
+      <div class="week-day-row ${isToday ? 'today' : ''} ${hasRestExercises ? 'has-exercises' : ''}" onclick="${onclickAttr}">
         <div class="week-day-name">${WEEK_DAYS_DISPLAY[idx]}</div>
         <div class="week-day-info">
           ${dayWorkouts.length > 0
@@ -421,7 +493,12 @@ function renderDayList() {
                 ${progress[w.id] ? '<span class="week-day-done">✓</span>' : ''}
               </div>
             `).join('')
-            : '<span class="week-day-rest">Descanso</span>'
+            : hasRestExercises
+              ? `<div class="week-day-workout">
+                  <span class="week-day-workout-title">Treino Livre</span>
+                  <span class="week-day-workout-exercises">${(loadRestDayExercises(currentGender)[restDay.id]?.exercises || []).length} ex.</span>
+                </div>`
+              : '<span class="week-day-rest">Descanso</span>'
           }
         </div>
         ${isToday ? '<span class="today-badge-sm">HOJE</span>' : ''}
@@ -487,6 +564,57 @@ function selectDay(dayId) {
   navigate('workout', { dayId });
 }
 
+function selectRestDay(dayId) {
+  const all = mergeWorkouts();
+  const restDayDef = (all[currentGender] || []).find(d => d.id === dayId);
+  if (!restDayDef) return;
+
+  const restData = loadRestDayExercises(currentGender);
+  const saved = restData[dayId];
+
+  currentWorkout = {
+    id: dayId,
+    day: restDayDef.day,
+    dayIndex: restDayDef.dayIndex,
+    title: (saved && saved.title) || 'Treino Livre',
+    restDay: false,
+    exercises: (saved && saved.exercises) || []
+  };
+
+  exerciseStates = loadExerciseStates(currentGender, dayId);
+  activeExercise = null;
+  workoutStartTime = null;
+  navigate('workout', { dayId });
+}
+
+function saveRestDayWorkout() {
+  if (!currentWorkout || !currentGender) return;
+  const restData = loadRestDayExercises(currentGender);
+  restData[currentWorkout.id] = {
+    title: currentWorkout.title,
+    exercises: currentWorkout.exercises
+  };
+  saveRestDayExercises(currentGender, restData);
+}
+
+function resetRestDayProgress(dayId) {
+  const restData = loadRestDayExercises(currentGender);
+  delete restData[dayId];
+  saveRestDayExercises(currentGender, restData);
+  try {
+    localStorage.removeItem(`exercises_${currentGender}_${dayId}`);
+    localStorage.removeItem(`workout_date_${currentGender}_${dayId}`);
+  } catch (e) {}
+}
+
+function resetRestDay() {
+  if (!currentWorkout) return;
+  if (!confirm(`Limpar todos os exercícios de ${currentWorkout.day}?`)) return;
+  resetRestDayProgress(currentWorkout.id);
+  exerciseStates = {};
+  navigate('workout', { dayId: currentWorkout.id });
+}
+
 function renderWorkout() {
   if (!currentWorkout) { goHome(); return; }
 
@@ -526,10 +654,28 @@ function renderWorkout() {
     `;
   });
 
+  if (currentWorkout.exercises.length === 0) {
+    html += `
+      <div style="text-align:center;padding:40px 20px;color:var(--text-muted);">
+        <div style="font-size:3rem;margin-bottom:12px;opacity:0.4;">🏋️</div>
+        <div style="font-size:1rem;font-weight:600;margin-bottom:4px;">Nenhum exercício ainda</div>
+        <div style="font-size:0.85rem;">Adicione exercícios para montar seu treino</div>
+      </div>
+    `;
+  }
+
+  const isRestDayWorkout = (all => {
+    const day = (all[currentGender] || []).find(d => d.id === currentWorkout.id);
+    return day && day.restDay;
+  })(mergeWorkouts());
+
   html += `
     <div class="btn-row" style="justify-content: center;">
       <button class="btn-back-days" onclick="goDayList()">← Voltar</button>
-      <button class="btn-reset" onclick="resetProgress()">Zerar Treinos</button>
+      ${isRestDayWorkout && currentWorkout.exercises.length > 0
+        ? `<button class="btn-reset" onclick="resetRestDay()">Limpar Treino</button>`
+        : `<button class="btn-reset" onclick="resetProgress()">Zerar Treinos</button>`
+      }
     </div>
     <div class="btn-row" style="justify-content: center; margin-top: 8px;">
       <button class="btn-reset" style="background:var(--accent);" onclick="openAddToWorkoutPicker()">+ Adicionar Exercício</button>
@@ -565,11 +711,17 @@ function saveWorkoutToStorage() {
       saveCustomWorkouts(customWorkouts);
     }
   } else {
-    const defaultDays = workouts[currentGender] || [];
-    const wIdx = defaultDays.findIndex(d => d.id === currentWorkout.id);
-    if (wIdx >= 0) {
-      workouts[currentGender][wIdx] = currentWorkout;
-      try { localStorage.setItem('workouts_override', JSON.stringify(workouts)); } catch (e) {}
+    const all = mergeWorkouts();
+    const defaultDay = (all[currentGender] || []).find(d => d.id === currentWorkout.id);
+    if (defaultDay && defaultDay.restDay) {
+      saveRestDayWorkout();
+    } else {
+      const defaultDays = workouts[currentGender] || [];
+      const wIdx = defaultDays.findIndex(d => d.id === currentWorkout.id);
+      if (wIdx >= 0) {
+        workouts[currentGender][wIdx] = currentWorkout;
+        try { localStorage.setItem('workouts_override', JSON.stringify(workouts)); } catch (e) {}
+      }
     }
   }
 }
@@ -1017,6 +1169,10 @@ function resetDay(dayId) {
   const progress = loadProgress(currentGender);
   delete progress[dayId];
   saveProgress(currentGender, progress);
+
+  if (day.restDay) {
+    resetRestDayProgress(dayId);
+  }
 
   try {
     localStorage.removeItem(`exercises_${currentGender}_${dayId}`);
