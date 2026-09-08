@@ -628,6 +628,27 @@ body {
   border-color: var(--accent);
 }
 
+.exercise-remove-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #e8eaed;
+  background: var(--bg-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  transition: all var(--transition);
+}
+
+.exercise-remove-btn:hover {
+  background: #dc3545;
+  border-color: #dc3545;
+  color: white;
+}
+
 /* ===== CSA ALUNO STYLE ACTIVE EXERCISE ===== */
 .csa-exercise {
   display: flex;

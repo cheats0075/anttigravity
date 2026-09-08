@@ -648,6 +648,7 @@ function renderWorkout() {
             ${!completed && completedSets > 0 ? `<div class="exercise-progress">Séries: ${completedSets}/${ex.sets}</div>` : ''}
           </div>
           <button class="exercise-edit-btn" onclick="event.stopPropagation(); swapExercise(${idx})">🔄</button>
+          <button class="exercise-remove-btn" onclick="event.stopPropagation(); removeExerciseFromWorkout(${idx})">✕</button>
           ${completed ? '<span class="exercise-check done">✓</span>' : '<span class="exercise-check">›</span>'}
         </div>
       </div>
@@ -698,6 +699,18 @@ function swapExercise(idx) {
   swappingExerciseIdx = idx;
   addingToWorkout = false;
   openExercisePicker();
+}
+
+function removeExerciseFromWorkout(idx) {
+  if (!currentWorkout) return;
+  const ex = currentWorkout.exercises[idx];
+  if (!ex) return;
+  if (!confirm(`Remover "${ex.name}" do treino?`)) return;
+  currentWorkout.exercises.splice(idx, 1);
+  delete exerciseStates[ex.id];
+  saveExerciseStates(currentGender, currentWorkout.id, exerciseStates);
+  saveWorkoutToStorage();
+  renderWorkout();
 }
 
 function saveWorkoutToStorage() {
