@@ -17,6 +17,12 @@
       "password": "1607",
       "name": "BRUNA",
       "isAdmin": false
+    },
+    {
+      "id": 6,
+      "password": "1213",
+      "name": "Juliano",
+      "isAdmin": false
     }
   ],
   "exerciseEdits": {
