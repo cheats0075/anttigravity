@@ -65,6 +65,22 @@
         { "id": "h5e4", "name": "Encolhimento", "sets": 3, "reps": "10-15", "image": "encolhimento.gif", "muscle": "Trapézio", "tips": "Suba os ombros até as orelhas, segure 1s no topo" },
         { "id": "h5e5", "name": "Abdominal", "sets": 3, "reps": "15-20", "image": "abdominal.gif", "muscle": "Abdômen", "tips": "Contrai o abdômen, não puxe o pescoço" }
       ]
+    },
+    {
+      "id": "h6",
+      "day": "Sábado",
+      "dayIndex": 6,
+      "title": "Descanso",
+      "restDay": true,
+      "exercises": []
+    },
+    {
+      "id": "h7",
+      "day": "Domingo",
+      "dayIndex": 0,
+      "title": "Descanso",
+      "restDay": true,
+      "exercises": []
     }
   ],
   "mulher": [
@@ -134,6 +150,22 @@
         { "id": "m5e5", "name": "Rosca Martelo", "sets": 3, "reps": "12", "image": "rosca_martelo.gif", "muscle": "Bíceps/Brachial", "tips": "Pegada neutra, movimento completo" },
         { "id": "m5e6", "name": "Tríceps Testa com Halter", "sets": 3, "reps": "12", "image": "triceps_testa.gif", "muscle": "Tríceps", "tips": "Cotovelos apontando para cima, só o antebraço se move" }
       ]
+    },
+    {
+      "id": "m6",
+      "day": "Sábado",
+      "dayIndex": 6,
+      "title": "Descanso",
+      "restDay": true,
+      "exercises": []
+    },
+    {
+      "id": "m7",
+      "day": "Domingo",
+      "dayIndex": 0,
+      "title": "Descanso",
+      "restDay": true,
+      "exercises": []
     }
   ]
 }
