@@ -1794,6 +1794,350 @@ body {
   outline-offset: 2px;
 }
 
+/* ===== LOGIN ===== */
+.login-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.login-logo {
+  font-size: 2rem;
+  font-weight: 900;
+  letter-spacing: 3px;
+  margin-bottom: 4px;
+  background: linear-gradient(135deg, var(--accent), #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.login-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 32px;
+}
+
+.login-form {
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.login-input {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid #2a2a3e;
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: 1rem;
+  outline: none;
+  transition: border-color var(--transition);
+  text-align: center;
+  letter-spacing: 2px;
+  font-weight: 600;
+}
+
+.login-input:focus {
+  border-color: var(--accent);
+}
+
+.login-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  border: none;
+  background: var(--accent);
+  color: white;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.login-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.login-error {
+  margin-top: 12px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: rgba(220, 53, 69, 0.15);
+  color: #dc3545;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* ===== HOME USER BADGE ===== */
+.home-user-badge {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.05);
+  display: inline-block;
+}
+
+.logout-link {
+  color: var(--accent);
+  cursor: pointer;
+  margin-left: 6px;
+  font-weight: 600;
+}
+
+/* ===== ADMIN PANEL ===== */
+.admin-screen {
+  padding-bottom: 40px;
+}
+
+.admin-section {
+  padding: 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.admin-section-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.admin-input {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #2a2a3e;
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color var(--transition);
+}
+
+.admin-input:focus {
+  border-color: var(--accent);
+}
+
+.admin-btn {
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent);
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.admin-btn:hover {
+  opacity: 0.9;
+}
+
+.admin-user-list {
+  margin-bottom: 12px;
+}
+
+.admin-user-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--bg-card);
+  margin-bottom: 6px;
+}
+
+.admin-user-info {
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.admin-remove-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid #dc3545;
+  background: transparent;
+  color: #dc3545;
+  cursor: pointer;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-remove-btn:hover {
+  background: #dc3545;
+  color: white;
+}
+
+.admin-add-user {
+  display: grid;
+  grid-template-columns: 80px 1fr 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-exercise-search {
+  margin-bottom: 12px;
+}
+
+.admin-exercise-search .admin-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.admin-exercise-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.admin-ex-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--bg-card);
+  margin-bottom: 4px;
+}
+
+.admin-ex-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-ex-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-ex-id {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.admin-ex-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.admin-edit-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: 1px solid #2a2a3e;
+  background: var(--bg-card);
+  cursor: pointer;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition);
+}
+
+.admin-edit-btn:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.admin-export-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #00b894, #00cec9);
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.admin-export-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+/* ===== SCHEDULE TOGGLES ===== */
+.admin-schedule-user {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.schedule-day-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--bg-card);
+  margin-bottom: 6px;
+}
+
+.schedule-day-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.schedule-toggle {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  cursor: pointer;
+}
+
+.schedule-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.schedule-slider {
+  position: absolute;
+  inset: 0;
+  background: #2a2a3e;
+  border-radius: 24px;
+  transition: all var(--transition);
+}
+
+.schedule-slider::before {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  left: 3px;
+  bottom: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: all var(--transition);
+}
+
+.schedule-toggle input:checked + .schedule-slider {
+  background: var(--accent);
+}
+
+.schedule-toggle input:checked + .schedule-slider::before {
+  transform: translateX(20px);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

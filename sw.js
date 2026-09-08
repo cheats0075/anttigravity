@@ -1,4 +1,4 @@
-const CACHE_NAME = 'anttigravity-v11';
+const CACHE_NAME = 'anttigravity-v12';
 const GIF_CACHE = 'anttigravity-gifs-v1';
 const CORE_ASSETS = [
   './',

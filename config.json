@@ -1,0 +1,7 @@
+{
+  "users": [
+    { "id": 387, "password": "0075", "name": "Admin", "isAdmin": true }
+  ],
+  "exerciseEdits": {},
+  "weeklySchedule": {}
+}

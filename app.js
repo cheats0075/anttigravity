@@ -40,6 +40,11 @@ let showBuilderForm = false;
 
 let customWorkouts = {};
 
+let currentUserId = null;
+let currentUserIsAdmin = false;
+let currentUserName = '';
+let remoteConfig = { users: [], exerciseEdits: {}, weeklySchedule: {} };
+
 function getExerciseGifPath(exercise) {
   if (typeof exercise.id === 'string') {
     return `assets/exercises/${exercise.gif || exercise.id}.gif`;
@@ -64,12 +69,117 @@ function getWorkoutExerciseGif(exercise) {
 }
 
 function tryLoadLib() {
-  try { customWorkouts = JSON.parse(localStorage.getItem('custom_workouts')) || {}; } catch (e) { customWorkouts = {}; }
+  try { customWorkouts = JSON.parse(sGet('custom_workouts')) || {}; } catch (e) { customWorkouts = {}; }
 }
 tryLoadLib();
 
+function storageKey(key) {
+  return currentUserId ? `${currentUserId}_${key}` : key;
+}
+
+function sGet(key) {
+  try { return localStorage.getItem(storageKey(key)); } catch (e) { return null; }
+}
+
+function sSet(key, val) {
+  try { localStorage.setItem(storageKey(key), val); } catch (e) {}
+}
+
+function sRemove(key) {
+  try { localStorage.removeItem(storageKey(key)); } catch (e) {}
+}
+
+async function loadRemoteConfig() {
+  try {
+    const r = await fetch('config.json?' + Date.now());
+    if (r.ok) remoteConfig = await r.json();
+  } catch (e) {
+    try {
+      const saved = localStorage.getItem('remote_config_backup');
+      if (saved) remoteConfig = JSON.parse(saved);
+    } catch (e2) {}
+  }
+}
+
+function saveRemoteConfig() {
+  try { localStorage.setItem('remote_config_backup', JSON.stringify(remoteConfig)); } catch (e) {}
+}
+
+function doLogin(userId, password) {
+  const uid = parseInt(userId, 10);
+  const pwd = String(password);
+  const user = remoteConfig.users.find(u => u.id === uid && u.password === pwd);
+  if (!user) return false;
+  currentUserId = user.id;
+  currentUserIsAdmin = !!user.isAdmin;
+  currentUserName = user.name;
+  try { localStorage.setItem('current_session', JSON.stringify({ id: user.id, name: user.name, isAdmin: user.isAdmin })); } catch (e) {}
+  return true;
+}
+
+function doLogout() {
+  currentUserId = null;
+  currentUserIsAdmin = false;
+  currentUserName = '';
+  currentGender = null;
+  currentWorkout = null;
+  try { localStorage.removeItem('current_session'); } catch (e) {}
+  renderLogin();
+}
+
+function checkSession() {
+  try {
+    const raw = localStorage.getItem('current_session');
+    if (!raw) return false;
+    const s = JSON.parse(raw);
+    const user = remoteConfig.users.find(u => u.id === s.id);
+    if (!user) return false;
+    currentUserId = user.id;
+    currentUserIsAdmin = !!user.isAdmin;
+    currentUserName = user.name;
+    return true;
+  } catch (e) { return false; }
+}
+
+function renderLogin() {
+  currentView = 'login';
+  app.innerHTML = `
+    <div class="screen login-screen">
+      <div class="login-logo">ANTIGRAVITY</div>
+      <div class="login-subtitle">Acesse sua conta</div>
+      <form onsubmit="handleLogin(event)" class="login-form">
+        <input class="login-input" type="number" id="login-user" placeholder="Usuário" inputmode="numeric" autocomplete="username" required>
+        <input class="login-input" type="password" id="login-pass" placeholder="Senha" inputmode="numeric" autocomplete="current-password" required>
+        <button class="login-btn" type="submit">Entrar</button>
+      </form>
+      <div id="login-error" class="login-error" style="display:none;">Usuário ou senha inválidos</div>
+    </div>
+  `;
+}
+
+function handleLogin(e) {
+  e.preventDefault();
+  const userId = document.getElementById('login-user').value;
+  const pass = document.getElementById('login-pass').value;
+  if (doLogin(userId, pass)) {
+    loadWorkouts().then(() => {
+      loadRestTime();
+      history.replaceState({ view: 'home' }, '', '#/');
+      renderHome();
+    });
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
 function getExercisesDB() {
-  return typeof EXERCISES_DB !== 'undefined' ? EXERCISES_DB : [];
+  const base = typeof EXERCISES_DB !== 'undefined' ? EXERCISES_DB : [];
+  const edits = remoteConfig.exerciseEdits || {};
+  if (Object.keys(edits).length === 0) return base;
+  return base.map(ex => {
+    const e = edits[String(ex.id)];
+    return e ? { ...ex, name: e.name || ex.name, muscle: e.muscle || ex.muscle } : ex;
+  });
 }
 
 function getAllWorkouts() {
@@ -88,13 +198,13 @@ function mergeWorkouts() {
 
 function loadRestTime() {
   try {
-    const saved = localStorage.getItem('rest_time');
+    const saved = sGet('rest_time');
     if (saved !== null) REST_TIME = parseInt(saved, 10) || 90;
   } catch (e) {}
 }
 
 function saveRestTime(time) {
-  try { localStorage.setItem('rest_time', time); } catch (e) {}
+  try { sSet('rest_time', time); } catch (e) {}
   REST_TIME = time;
 }
 
@@ -109,58 +219,58 @@ async function loadWorkouts() {
 
 function loadProgress(gender) {
   try {
-    const saved = localStorage.getItem(`progress_${gender}`);
+    const saved = sGet(`progress_${gender}`);
     return saved ? JSON.parse(saved) : {};
   } catch (e) { return {}; }
 }
 
 function saveProgress(gender, progress) {
-  try { localStorage.setItem(`progress_${gender}`, JSON.stringify(progress)); } catch (e) {}
+  try { sSet(`progress_${gender}`, JSON.stringify(progress)); } catch (e) {}
 }
 
 function loadExerciseStates(gender, workoutId) {
   try {
-    const saved = localStorage.getItem(`exercises_${gender}_${workoutId}`);
+    const saved = sGet(`exercises_${gender}_${workoutId}`);
     return saved ? JSON.parse(saved) : {};
   } catch (e) { return {}; }
 }
 
 function saveExerciseStates(gender, workoutId, states) {
-  try { localStorage.setItem(`exercises_${gender}_${workoutId}`, JSON.stringify(states)); } catch (e) {}
+  try { sSet(`exercises_${gender}_${workoutId}`, JSON.stringify(states)); } catch (e) {}
 }
 
 function loadHistory() {
   try {
-    const saved = localStorage.getItem('workout_history');
+    const saved = sGet('workout_history');
     return saved ? JSON.parse(saved) : [];
   } catch (e) { return []; }
 }
 
 function saveHistory(history) {
-  try { localStorage.setItem('workout_history', JSON.stringify(history)); } catch (e) {}
+  try { sSet('workout_history', JSON.stringify(history)); } catch (e) {}
 }
 
 function loadCustomWorkouts() {
   try {
-    const saved = localStorage.getItem('custom_workouts');
+    const saved = sGet('custom_workouts');
     return saved ? JSON.parse(saved) : {};
   } catch (e) { return {}; }
 }
 
 function saveCustomWorkouts(data) {
-  try { localStorage.setItem('custom_workouts', JSON.stringify(data)); } catch (e) {}
+  try { sSet('custom_workouts', JSON.stringify(data)); } catch (e) {}
   customWorkouts = data;
 }
 
 function loadRestDayExercises(gender) {
   try {
-    const saved = localStorage.getItem(`restday_exercises_${gender}`);
+    const saved = sGet(`restday_exercises_${gender}`);
     return saved ? JSON.parse(saved) : {};
   } catch (e) { return {}; }
 }
 
 function saveRestDayExercises(gender, data) {
-  try { localStorage.setItem(`restday_exercises_${gender}`, JSON.stringify(data)); } catch (e) {}
+  try { sSet(`restday_exercises_${gender}`, JSON.stringify(data)); } catch (e) {}
 }
 
 function isRestDayWithExercises(dayId, gender) {
@@ -255,7 +365,7 @@ function getWeeklyStats() {
   let completedThisWeek = 0;
   allActiveDays.forEach(d => {
     if (progress[d.id]) {
-      const saved = localStorage.getItem(`workout_date_${currentGender}_${d.id}`);
+      const saved = localStorage.getItem(storageKey(`workout_date_${currentGender}_${d.id}`));
       if (saved) {
         const date = new Date(saved);
         if (date >= startOfWeek) completedThisWeek++;
@@ -276,7 +386,7 @@ function getWeeklyStats() {
     let weekComplete = true;
     allActiveDays.forEach(d => {
       if (progress[d.id]) {
-        const saved = localStorage.getItem(`workout_date_${currentGender}_${d.id}`);
+        const saved = localStorage.getItem(storageKey(`workout_date_${currentGender}_${d.id}`));
         if (saved) {
           const date = new Date(saved);
           if (date >= wStart && date < wEnd) {}
@@ -318,6 +428,7 @@ function navigate(view, data, pushState) {
 
 function renderView(view) {
   switch (view) {
+    case 'login': renderLogin(); break;
     case 'home': renderHome(); break;
     case 'dayList': renderDayList(); break;
     case 'workout': renderWorkout(); break;
@@ -325,6 +436,7 @@ function renderView(view) {
     case 'library': renderLibrary(); break;
     case 'builder': renderBuilder(); break;
     case 'history': renderHistory(); break;
+    case 'admin': renderAdmin(); break;
   }
 }
 
@@ -435,11 +547,18 @@ function renderHome() {
     <div class="screen home">
       <div class="home-title">ANTIGRAVITY</div>
       <div class="home-subtitle">Escolha seu treino</div>
+      ${currentUserId ? `<div class="home-user-badge">${currentUserIsAdmin ? '👑' : '👤'} ${currentUserName} (#${currentUserId}) <span class="logout-link" onclick="doLogout()">sair</span></div>` : ''}
       ${todayBtn}
       <button class="home-btn" onclick="selectGender('homem')">HOMEM</button>
       <button class="home-btn female" onclick="selectGender('mulher')">MULHER</button>
       ${statsHtml}
       ${customSection}
+      ${currentUserIsAdmin ? `
+        <div style="margin-top:24px;">
+          <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:12px;letter-spacing:1px;font-weight:700;">ADMIN</div>
+          <button class="home-btn" style="background:#6c5ce7;font-size:0.85rem;" onclick="navigate('admin')">⚙️ Painel Admin</button>
+        </div>
+      ` : ''}
     </div>
   `;
 }
@@ -602,8 +721,8 @@ function resetRestDayProgress(dayId) {
   delete restData[dayId];
   saveRestDayExercises(currentGender, restData);
   try {
-    localStorage.removeItem(`exercises_${currentGender}_${dayId}`);
-    localStorage.removeItem(`workout_date_${currentGender}_${dayId}`);
+    localStorage.removeItem(storageKey(`exercises_${currentGender}_${dayId}`));
+    localStorage.removeItem(storageKey(`workout_date_${currentGender}_${dayId}`));
   } catch (e) {}
 }
 
@@ -733,7 +852,7 @@ function saveWorkoutToStorage() {
       const wIdx = defaultDays.findIndex(d => d.id === currentWorkout.id);
       if (wIdx >= 0) {
         workouts[currentGender][wIdx] = currentWorkout;
-        try { localStorage.setItem('workouts_override', JSON.stringify(workouts)); } catch (e) {}
+        try { localStorage.setItem(storageKey('workouts_override'), JSON.stringify(workouts)); } catch (e) {}
       }
     }
   }
@@ -1031,7 +1150,7 @@ function checkAllCompleted() {
     progress[currentWorkout.id] = true;
     saveProgress(currentGender, progress);
 
-    try { localStorage.setItem(`workout_date_${currentGender}_${currentWorkout.id}`, new Date().toISOString()); } catch (e) {}
+    try { localStorage.setItem(storageKey(`workout_date_${currentGender}_${currentWorkout.id}`), new Date().toISOString()); } catch (e) {}
 
     const duration = workoutStartTime ? Date.now() - workoutStartTime : 0;
     const history = loadHistory();
@@ -1188,8 +1307,8 @@ function resetDay(dayId) {
   }
 
   try {
-    localStorage.removeItem(`exercises_${currentGender}_${dayId}`);
-    localStorage.removeItem(`workout_date_${currentGender}_${dayId}`);
+    localStorage.removeItem(storageKey(`exercises_${currentGender}_${dayId}`));
+    localStorage.removeItem(storageKey(`workout_date_${currentGender}_${dayId}`));
   } catch (e) {}
 
   const overlay = document.querySelector('.modal-overlay');
@@ -1718,6 +1837,205 @@ function setCustomRestTime() {
 }
 
 /* ======================== */
+/* ADMIN PANEL              */
+/* ======================== */
+
+function renderAdmin() {
+  if (!currentUserIsAdmin) { renderHome(); return; }
+  currentView = 'admin';
+
+  const usersHtml = remoteConfig.users.map(u => `
+    <div class="admin-user-row">
+      <span class="admin-user-info">${u.isAdmin ? '👑' : '👤'} <strong>${u.name}</strong> — #${u.id}</span>
+      ${u.id !== 387 ? `<button class="admin-remove-btn" onclick="removeUser(${u.id})">✕</button>` : ''}
+    </div>
+  `).join('');
+
+  const editCount = Object.keys(remoteConfig.exerciseEdits).length;
+
+  app.innerHTML = `
+    <div class="screen admin-screen">
+      <div class="day-list-header">
+        <button class="btn-back-days" onclick="goHome()">← Voltar</button>
+        <div class="day-list-title">⚙️ Admin</div>
+        <div></div>
+      </div>
+
+      <div class="admin-section">
+        <div class="admin-section-title">Usuários</div>
+        <div class="admin-user-list">${usersHtml}</div>
+        <div class="admin-add-user">
+          <input class="admin-input" type="number" id="new-user-id" placeholder="ID" inputmode="numeric">
+          <input class="admin-input" type="password" id="new-user-pass" placeholder="Senha" inputmode="numeric">
+          <input class="admin-input" type="text" id="new-user-name" placeholder="Nome">
+          <button class="admin-btn" onclick="createUser()">+ Criar</button>
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <div class="admin-section-title">Exercícios Editados (${editCount})</div>
+        <div class="admin-exercise-search">
+          <input class="admin-input" type="text" id="admin-ex-search" placeholder="Buscar exercício por nome ou ID..." oninput="filterAdminExercises()">
+        </div>
+        <div id="admin-exercise-list" class="admin-exercise-list"></div>
+      </div>
+
+      <div class="admin-section">
+        <div class="admin-section-title">Dias da Semana</div>
+        <div id="admin-schedule" class="admin-schedule"></div>
+      </div>
+
+      <div class="admin-section">
+        <button class="admin-export-btn" onclick="exportConfig()">📦 Exportar Config JSON</button>
+      </div>
+    </div>
+  `;
+
+  filterAdminExercises();
+  renderAdminSchedule();
+}
+
+function filterAdminExercises() {
+  const query = (document.getElementById('admin-ex-search')?.value || '').toLowerCase();
+  const db = typeof EXERCISES_DB !== 'undefined' ? EXERCISES_DB : [];
+  let filtered = db;
+  if (query) {
+    filtered = filtered.filter(ex =>
+      String(ex.id).includes(query) ||
+      ex.name.toLowerCase().includes(query) ||
+      ex.muscle.toLowerCase().includes(query)
+    );
+  }
+  filtered = filtered.slice(0, 50);
+
+  const listEl = document.getElementById('admin-exercise-list');
+  if (!listEl) return;
+
+  listEl.innerHTML = filtered.map(ex => {
+    const edit = remoteConfig.exerciseEdits[String(ex.id)] || {};
+    const displayName = edit.name || ex.name;
+    const displayMuscle = edit.muscle || ex.muscle;
+    return `
+      <div class="admin-ex-row">
+        <div class="admin-ex-info">
+          <div class="admin-ex-name">${displayName}</div>
+          <div class="admin-ex-id">#${ex.id} — ${displayMuscle}</div>
+        </div>
+        <div class="admin-ex-actions">
+          <button class="admin-edit-btn" onclick="editExerciseName(${ex.id})">✏️</button>
+          <button class="admin-edit-btn" onclick="editExerciseMuscle(${ex.id})">📂</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function editExerciseName(exId) {
+  const db = typeof EXERCISES_DB !== 'undefined' ? EXERCISES_DB : [];
+  const ex = db.find(e => e.id === exId);
+  if (!ex) return;
+  const current = remoteConfig.exerciseEdits[String(exId)]?.name || ex.name;
+  const newName = prompt(`Editar nome do exercício #${exId}:`, current);
+  if (newName !== null && newName.trim()) {
+    if (!remoteConfig.exerciseEdits[String(exId)]) remoteConfig.exerciseEdits[String(exId)] = {};
+    remoteConfig.exerciseEdits[String(exId)].name = newName.trim();
+    saveRemoteConfig();
+    filterAdminExercises();
+  }
+}
+
+function editExerciseMuscle(exId) {
+  const db = typeof EXERCISES_DB !== 'undefined' ? EXERCISES_DB : [];
+  const ex = db.find(e => e.id === exId);
+  if (!ex) return;
+  const current = remoteConfig.exerciseEdits[String(exId)]?.muscle || ex.muscle;
+  const newMuscle = prompt(`Editar categoria/músculo do exercício #${exId}:`, current);
+  if (newMuscle !== null && newMuscle.trim()) {
+    if (!remoteConfig.exerciseEdits[String(exId)]) remoteConfig.exerciseEdits[String(exId)] = {};
+    remoteConfig.exerciseEdits[String(exId)].muscle = newMuscle.trim();
+    saveRemoteConfig();
+    filterAdminExercises();
+  }
+}
+
+function createUser() {
+  const id = parseInt(document.getElementById('new-user-id')?.value, 10);
+  const pass = document.getElementById('new-user-pass')?.value?.trim();
+  const name = document.getElementById('new-user-name')?.value?.trim();
+  if (!id || !pass || !name) { alert('Preencha ID, senha e nome.'); return; }
+  if (remoteConfig.users.find(u => u.id === id)) { alert('Já existe um usuário com esse ID.'); return; }
+  remoteConfig.users.push({ id, password: pass, name, isAdmin: false });
+  saveRemoteConfig();
+  alert(`Usuário ${name} (#${id}) criado!`);
+  document.getElementById('new-user-id').value = '';
+  document.getElementById('new-user-pass').value = '';
+  document.getElementById('new-user-name').value = '';
+  renderAdmin();
+}
+
+function removeUser(userId) {
+  if (!confirm(`Remover usuário #${userId}?`)) return;
+  remoteConfig.users = remoteConfig.users.filter(u => u.id !== userId);
+  saveRemoteConfig();
+  renderAdmin();
+}
+
+function exportConfig() {
+  const json = JSON.stringify(remoteConfig, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'config.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function renderAdminSchedule() {
+  const el = document.getElementById('admin-schedule');
+  if (!el) return;
+  const schedule = remoteConfig.weeklySchedule || {};
+  el.innerHTML = `
+    <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:8px;">Para configurar a agenda de um usuário, use o ID dele no campo abaixo.</div>
+    <div class="admin-schedule-user">
+      <input class="admin-input" type="number" id="schedule-user-id" placeholder="ID do usuário" inputmode="numeric" style="width:100px;">
+      <button class="admin-btn" onclick="loadUserSchedule()">Carregar</button>
+    </div>
+    <div id="schedule-days-container"></div>
+  `;
+}
+
+function loadUserSchedule() {
+  const uid = parseInt(document.getElementById('schedule-user-id')?.value, 10);
+  if (!uid) return;
+  const container = document.getElementById('schedule-days-container');
+  if (!container) return;
+  const schedule = remoteConfig.weeklySchedule || {};
+  const userSchedule = schedule[String(uid)] || {};
+
+  container.innerHTML = WEEK_DAYS_DISPLAY.map((day, idx) => {
+    const dayNum = (idx + 1) % 7;
+    const active = userSchedule[String(dayNum)] !== false;
+    return `
+      <div class="schedule-day-row">
+        <span class="schedule-day-name">${day}</span>
+        <label class="schedule-toggle">
+          <input type="checkbox" ${active ? 'checked' : ''} onchange="toggleScheduleDay(${uid}, ${dayNum}, this.checked)">
+          <span class="schedule-slider"></span>
+        </label>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleScheduleDay(uid, dayNum, active) {
+  if (!remoteConfig.weeklySchedule) remoteConfig.weeklySchedule = {};
+  if (!remoteConfig.weeklySchedule[String(uid)]) remoteConfig.weeklySchedule[String(uid)] = {};
+  remoteConfig.weeklySchedule[String(uid)][String(dayNum)] = active;
+  saveRemoteConfig();
+}
+
+/* ======================== */
 /* NAVIGATION / HISTORY     */
 /* ======================== */
 
@@ -1728,6 +2046,8 @@ function handlePopState(e) {
   isResting = false;
   timer = 0;
   workoutStartTime = null;
+
+  if (!currentUserId) { renderLogin(); return; }
 
   if (e.state && e.state.view) {
     currentGender = e.state.gender || currentGender;
@@ -1741,6 +2061,7 @@ function handlePopState(e) {
       case 'library': currentTab = 'library'; pickerMode = false; renderLibrary(); break;
       case 'builder': currentTab = 'builder'; renderBuilder(); break;
       case 'history': currentTab = 'history'; renderHistory(); break;
+      case 'admin': renderAdmin(); break;
       default: renderHome();
     }
   } else {
@@ -1767,6 +2088,10 @@ function initFromUrl() {
   if (path === 'builder') {
     currentTab = 'builder';
     renderBuilder();
+    return;
+  }
+  if (path === 'admin') {
+    renderAdmin();
     return;
   }
 
@@ -1796,8 +2121,13 @@ function initFromUrl() {
 
 window.addEventListener('popstate', handlePopState);
 
-loadWorkouts().then(() => {
+loadWorkouts().then(async () => {
+  await loadRemoteConfig();
   loadRestTime();
-  history.replaceState({ view: 'home' }, '', '#/');
-  initFromUrl();
+  if (checkSession()) {
+    history.replaceState({ view: 'home' }, '', '#/');
+    initFromUrl();
+  } else {
+    renderLogin();
+  }
 });
