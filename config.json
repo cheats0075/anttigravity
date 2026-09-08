@@ -19,6 +19,23 @@
       "isAdmin": false
     }
   ],
-  "exerciseEdits": {},
-  "weeklySchedule": {}
+  "exerciseEdits": {
+    "100": {
+      "name": "abdominal"
+    },
+    "112": {
+      "muscle": "Antebraço"
+    },
+    "119": {
+      "muscle": "Bíceps"
+    },
+    "120": {
+      "muscle": "Bíceps"
+    }
+  },
+  "weeklySchedule": {
+    "5": {
+      "1": true
+    }
+  }
 }
