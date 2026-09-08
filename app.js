@@ -1898,6 +1898,7 @@ function renderAdmin() {
 function filterAdminExercises() {
   const query = (document.getElementById('admin-ex-search')?.value || '').toLowerCase();
   const db = typeof EXERCISES_DB !== 'undefined' ? EXERCISES_DB : [];
+  const MUSCLES = ["Abdome","Antebraço","Bíceps","Corpo","Costas","Glúteo","Ombro","Peito","Perna","Tríceps"];
   let filtered = db;
   if (query) {
     filtered = filtered.filter(ex =>
@@ -1915,47 +1916,35 @@ function filterAdminExercises() {
     const edit = remoteConfig.exerciseEdits[String(ex.id)] || {};
     const displayName = edit.name || ex.name;
     const displayMuscle = edit.muscle || ex.muscle;
+    const muscleOptions = MUSCLES.map(m =>
+      `<option value="${m}" ${m === displayMuscle ? 'selected' : ''}>${m}</option>`
+    ).join('');
     return `
       <div class="admin-ex-row">
+        <img class="admin-ex-gif" src="https://cdnh.sistemasca.com/arquivos/exercicios/${ex.id}.gif" alt="${displayName}" onerror="this.style.display='none'">
         <div class="admin-ex-info">
-          <div class="admin-ex-name">${displayName}</div>
-          <div class="admin-ex-id">#${ex.id} — ${displayMuscle}</div>
-        </div>
-        <div class="admin-ex-actions">
-          <button class="admin-edit-btn" onclick="editExerciseName(${ex.id})">✏️</button>
-          <button class="admin-edit-btn" onclick="editExerciseMuscle(${ex.id})">📂</button>
+          <input class="admin-ex-name-input" type="text" value="${displayName}" onchange="updateExerciseName(${ex.id}, this.value)">
+          <div class="admin-ex-id">#${ex.id}</div>
+          <select class="admin-ex-muscle-select" onchange="updateExerciseMuscle(${ex.id}, this.value)">
+            ${muscleOptions}
+          </select>
         </div>
       </div>
     `;
   }).join('');
 }
 
-function editExerciseName(exId) {
-  const db = typeof EXERCISES_DB !== 'undefined' ? EXERCISES_DB : [];
-  const ex = db.find(e => e.id === exId);
-  if (!ex) return;
-  const current = remoteConfig.exerciseEdits[String(exId)]?.name || ex.name;
-  const newName = prompt(`Editar nome do exercício #${exId}:`, current);
-  if (newName !== null && newName.trim()) {
-    if (!remoteConfig.exerciseEdits[String(exId)]) remoteConfig.exerciseEdits[String(exId)] = {};
-    remoteConfig.exerciseEdits[String(exId)].name = newName.trim();
-    saveRemoteConfig();
-    filterAdminExercises();
-  }
+function updateExerciseName(exId, newName) {
+  if (!newName.trim()) return;
+  if (!remoteConfig.exerciseEdits[String(exId)]) remoteConfig.exerciseEdits[String(exId)] = {};
+  remoteConfig.exerciseEdits[String(exId)].name = newName.trim();
+  saveRemoteConfig();
 }
 
-function editExerciseMuscle(exId) {
-  const db = typeof EXERCISES_DB !== 'undefined' ? EXERCISES_DB : [];
-  const ex = db.find(e => e.id === exId);
-  if (!ex) return;
-  const current = remoteConfig.exerciseEdits[String(exId)]?.muscle || ex.muscle;
-  const newMuscle = prompt(`Editar categoria/músculo do exercício #${exId}:`, current);
-  if (newMuscle !== null && newMuscle.trim()) {
-    if (!remoteConfig.exerciseEdits[String(exId)]) remoteConfig.exerciseEdits[String(exId)] = {};
-    remoteConfig.exerciseEdits[String(exId)].muscle = newMuscle.trim();
-    saveRemoteConfig();
-    filterAdminExercises();
-  }
+function updateExerciseMuscle(exId, newMuscle) {
+  if (!remoteConfig.exerciseEdits[String(exId)]) remoteConfig.exerciseEdits[String(exId)] = {};
+  remoteConfig.exerciseEdits[String(exId)].muscle = newMuscle;
+  saveRemoteConfig();
 }
 
 function createUser() {
