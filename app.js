@@ -547,7 +547,7 @@ function renderHome() {
     <div class="screen home">
       <div class="home-title">ANTIGRAVITY</div>
       <div class="home-subtitle">Escolha seu treino</div>
-      ${currentUserId ? `<div class="home-user-badge">${currentUserIsAdmin ? '👑' : '👤'} ${currentUserName} (#${currentUserId}) <span class="logout-link" onclick="doLogout()">sair</span></div>` : ''}
+      ${currentUserId ? `<div class="home-user-badge">${currentUserIsAdmin ? '👑' : '👤'} ${currentUserName} — Login: ${currentUserId} <span class="logout-link" onclick="doLogout()">sair</span></div>` : ''}
       ${todayBtn}
       <button class="home-btn" onclick="selectGender('homem')">HOMEM</button>
       <button class="home-btn female" onclick="selectGender('mulher')">MULHER</button>
@@ -1846,7 +1846,7 @@ function renderAdmin() {
 
   const usersHtml = remoteConfig.users.map(u => `
     <div class="admin-user-row">
-      <span class="admin-user-info">${u.isAdmin ? '👑' : '👤'} <strong>${u.name}</strong> — #${u.id}</span>
+      <span class="admin-user-info">${u.isAdmin ? '👑' : '👤'} <strong>Login: ${u.id}</strong> — ${u.name}</span>
       ${u.id !== 387 ? `<button class="admin-remove-btn" onclick="removeUser(${u.id})">✕</button>` : ''}
     </div>
   `).join('');
@@ -1865,9 +1865,9 @@ function renderAdmin() {
         <div class="admin-section-title">Usuários</div>
         <div class="admin-user-list">${usersHtml}</div>
         <div class="admin-add-user">
-          <input class="admin-input" type="number" id="new-user-id" placeholder="ID" inputmode="numeric">
+          <input class="admin-input" type="number" id="new-user-id" placeholder="Login" inputmode="numeric">
           <input class="admin-input" type="password" id="new-user-pass" placeholder="Senha" inputmode="numeric">
-          <input class="admin-input" type="text" id="new-user-name" placeholder="Nome">
+          <input class="admin-input" type="text" id="new-user-name" placeholder="Nome do usuário">
           <button class="admin-btn" onclick="createUser()">+ Criar</button>
         </div>
       </div>
@@ -1963,7 +1963,7 @@ function createUser() {
   const pass = document.getElementById('new-user-pass')?.value?.trim();
   const name = document.getElementById('new-user-name')?.value?.trim();
   if (!id || !pass || !name) { alert('Preencha ID, senha e nome.'); return; }
-  if (remoteConfig.users.find(u => u.id === id)) { alert('Já existe um usuário com esse ID.'); return; }
+  if (remoteConfig.users.find(u => u.id === id)) { alert('Já existe um usuário com esse Login.'); return; }
   remoteConfig.users.push({ id, password: pass, name, isAdmin: false });
   saveRemoteConfig();
   alert(`Usuário ${name} (#${id}) criado!`);
@@ -1998,7 +1998,7 @@ function renderAdminSchedule() {
   el.innerHTML = `
     <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:8px;">Para configurar a agenda de um usuário, use o ID dele no campo abaixo.</div>
     <div class="admin-schedule-user">
-      <input class="admin-input" type="number" id="schedule-user-id" placeholder="ID do usuário" inputmode="numeric" style="width:100px;">
+      <input class="admin-input" type="number" id="schedule-user-id" placeholder="Login do usuário" inputmode="numeric" style="width:120px;">
       <button class="admin-btn" onclick="loadUserSchedule()">Carregar</button>
     </div>
     <div id="schedule-days-container"></div>
