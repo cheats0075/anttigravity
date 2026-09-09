@@ -184,6 +184,26 @@ async function loadRemoteConfig() {
 
 function saveRemoteConfig() {}
 
+async function saveAllConfig() {
+  if (!authToken || !currentUserIsAdmin) { alert('Apenas admin pode salvar.'); return; }
+
+  const btn = document.getElementById('admin-save-btn');
+  if (btn) { btn.textContent = 'Salvando...'; btn.disabled = true; }
+
+  const result = await apiPut('/config', {
+    exerciseEdits: remoteConfig.exerciseEdits,
+    weeklySchedule: remoteConfig.weeklySchedule
+  });
+
+  if (btn) { btn.textContent = '💾 Salvar tudo na API'; btn.disabled = false; }
+
+  if (result.error) {
+    alert('Erro ao salvar: ' + result.error);
+  } else {
+    alert('Configuração salva na API com sucesso!');
+  }
+}
+
 async function doLogin(userId, password) {
   const uid = parseInt(userId, 10);
   const pwd = String(password);
@@ -732,6 +752,7 @@ function renderHome() {
         <div style="margin-top:24px;">
           <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:12px;letter-spacing:1px;font-weight:700;">ADMIN</div>
           <button class="home-btn" style="background:#6c5ce7;font-size:0.85rem;" onclick="navigate('admin')">⚙️ Painel Admin</button>
+          <button class="home-btn" style="background:#00b894;font-size:0.85rem;margin-top:8px;" onclick="saveAllConfig()">💾 Salvar dados na API</button>
         </div>
       ` : ''}
     </div>
@@ -2244,6 +2265,7 @@ function renderAdmin() {
       </div>
 
       <div class="admin-section">
+        <button class="admin-save-btn" id="admin-save-btn" onclick="saveAllConfig()">💾 Salvar tudo na API</button>
         <button class="admin-export-btn" onclick="exportConfig()">📦 Exportar Config JSON</button>
       </div>
     </div>
