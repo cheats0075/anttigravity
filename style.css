@@ -34,7 +34,7 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  background: #0a0e1a url('assets/bg.png') center top / cover no-repeat fixed;
+  background: #0a0e1a;
   color: var(--text-primary);
   min-height: 100vh;
   overflow-x: hidden;
