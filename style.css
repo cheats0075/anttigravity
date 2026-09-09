@@ -2155,6 +2155,14 @@ body {
 }
 
 /* ===== USER HEADER BAR (Common User) ===== */
+.home-user {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0;
+  animation: fadeIn 0.6s ease;
+}
+
 .user-home-topbar {
   display: flex;
   align-items: center;
