@@ -48,6 +48,7 @@ let builderTargetUser = null;
 let builderSelectedDay = null;
 
 let customWorkouts = {};
+let userWorkouts = {};
 
 let currentUserId = null;
 let currentUserIsAdmin = false;
@@ -275,11 +276,11 @@ async function handleLogin(e) {
   const pass = document.getElementById('login-pass').value;
   if (await doLogin(userId, pass)) {
     await loadRemoteConfig();
-    loadWorkouts().then(() => {
-      loadRestTime();
-      history.replaceState({ view: 'home' }, '', '#/');
-      renderHome();
-    });
+    await loadWorkouts();
+    await loadUserWorkouts(currentUserId);
+    loadRestTime();
+    history.replaceState({ view: 'home' }, '', '#/');
+    renderHome();
   } else {
     document.getElementById('login-error').style.display = 'block';
   }
@@ -337,6 +338,42 @@ async function loadWorkouts() {
     workouts = await resp.json();
   } catch (e) {
     console.warn('Erro ao carregar treinos:', e);
+  }
+}
+
+async function loadUserWorkouts(userId) {
+  if (!authToken) {
+    userWorkouts = {};
+    return;
+  }
+
+  try {
+    const data = await apiGet(`/user-workouts/${userId}`);
+    if (data && Array.isArray(data)) {
+      userWorkouts[userId] = data;
+      return;
+    }
+  } catch (e) {
+    console.warn('API user workouts load failed:', e);
+  }
+
+  userWorkouts = {};
+}
+
+async function saveUserWorkouts(userId, days) {
+  if (!authToken) return false;
+
+  try {
+    const result = await apiPut(`/user-workouts/${userId}`, days);
+    if (result.error) {
+      console.warn('API save user workouts error:', result.error);
+      return false;
+    }
+    userWorkouts[userId] = days;
+    return true;
+  } catch (e) {
+    console.warn('API save user workouts failed:', e);
+    return false;
   }
 }
 
@@ -677,6 +714,7 @@ function renderHome() {
   const customDays = (currentGender && customWorkouts[currentGender]) || [];
 
   if (!currentUserIsAdmin) {
+    const userGender = currentGender || 'mulher';
     app.innerHTML = `
       ${renderTabBar()}
       <div class="screen home-user">
@@ -685,7 +723,7 @@ function renderHome() {
           <button class="user-header-logout" onclick="doLogout()">Sair</button>
         </div>
         <div class="home-title">ANTIGRAVITY</div>
-        <button class="home-btn today-btn" onclick="selectGender('${currentGender}')">INICIAR</button>
+        <button class="home-btn today-btn" onclick="selectGender('${userGender}')">INICIAR</button>
       </div>
     `;
     return;
@@ -759,67 +797,109 @@ function selectGender(gender) {
 }
 
 function renderDayList() {
-  const all = mergeWorkouts();
-  const days = all[currentGender] || [];
   const todayIdx = getTodayIndex();
   const stats = getWeeklyStats();
   const progress = loadProgress(currentGender);
+
+  let userDays = [];
+  if (!currentUserIsAdmin && currentUserId && userWorkouts[currentUserId]) {
+    userDays = userWorkouts[currentUserId];
+  }
 
   let html = `
     <div class="screen">
       <div class="day-list-header">
         <button class="btn-back-days" onclick="goHome()">← Voltar</button>
-        <div class="day-list-title">${currentGender === 'homem' ? 'HOMEM' : 'MULHER'}</div>
+        <div class="day-list-title">${currentUserIsAdmin ? (currentGender === 'homem' ? 'HOMEM' : 'MULHER') : currentUserName}</div>
         ${currentUserIsAdmin ? `<button class="btn-history" onclick="showHistory()">Histórico</button>` : ''}
       </div>
   `;
 
-  WEEK_DAYS.forEach((dayKey, idx) => {
-    const dayIndex = (idx + 1) % 7;
-    const dayWorkout = days.find(d => d.dayIndex === dayIndex && !d.restDay);
-    const dayWorkouts = days.filter(d => d.dayIndex === dayIndex);
-    const restDay = days.find(d => d.dayIndex === dayIndex && d.restDay);
-    const isToday = dayIndex === todayIdx;
-    const hasRestExercises = restDay && isRestDayWithExercises(restDay.id, currentGender);
+  if (!currentUserIsAdmin && userDays.length > 0) {
+    WEEK_DAYS.forEach((dayKey, idx) => {
+      const dayIndex = (idx + 1) % 7;
+      const dayWorkout = userDays.find(d => d.dayIndex === dayIndex);
+      const isToday = dayIndex === todayIdx;
 
-    let onclickAttr = '';
-    if (dayWorkout) {
-      onclickAttr = `selectDay('${dayWorkout.id}')`;
-    } else if (restDay) {
-      onclickAttr = `selectRestDay('${restDay.id}')`;
-    }
-
-    html += `
-      <div class="week-day-row ${isToday ? 'today' : ''} ${hasRestExercises ? 'has-exercises' : ''}" onclick="${onclickAttr}">
-        <div class="week-day-name">${WEEK_DAYS_DISPLAY[idx]}</div>
-        <div class="week-day-info">
-          ${dayWorkouts.length > 0
-            ? dayWorkouts.map(w => `
-              <div class="week-day-workout">
-                <span class="week-day-workout-title">${w.title}</span>
-                <span class="week-day-workout-exercises">${w.exercises.length} ex.</span>
-                ${progress[w.id] ? '<span class="week-day-done">✓</span>' : ''}
-              </div>
-            `).join('')
-            : hasRestExercises
+      html += `
+        <div class="week-day-row ${isToday ? 'today' : ''}" onclick="${dayWorkout ? `selectDay('${dayWorkout.id}')` : ''}">
+          <div class="week-day-name">${WEEK_DAYS_DISPLAY[idx]}</div>
+          <div class="week-day-info">
+            ${dayWorkout && dayWorkout.exercises && dayWorkout.exercises.length > 0
               ? `<div class="week-day-workout">
-                  <span class="week-day-workout-title">Treino Livre</span>
-                  <span class="week-day-workout-exercises">${(loadRestDayExercises(currentGender)[restDay.id]?.exercises || []).length} ex.</span>
+                  <span class="week-day-workout-title">${dayWorkout.title}</span>
+                  <span class="week-day-workout-exercises">${dayWorkout.exercises.length} ex.</span>
+                  ${progress[dayWorkout.id] ? '<span class="week-day-done">✓</span>' : ''}
                 </div>`
-              : '<span class="week-day-rest">Adicionar</span>'
-          }
+              : '<span class="week-day-rest">Descanso</span>'
+            }
+          </div>
+          ${isToday ? '<span class="today-badge-sm">HOJE</span>' : ''}
         </div>
-        ${isToday ? '<span class="today-badge-sm">HOJE</span>' : ''}
-      </div>
-    `;
-  });
-
-  const customDays = (currentGender && customWorkouts[currentGender]) || [];
-  if (customDays.length > 0) {
-    html += `<div class="section-label-custom">⭐ TREINOS PERSONALIZADOS</div>`;
-    customDays.forEach(day => {
-      html += renderDayCard(day, todayIdx, progress, true);
+      `;
     });
+  } else if (!currentUserIsAdmin) {
+    WEEK_DAYS.forEach((dayKey, idx) => {
+      html += `
+        <div class="week-day-row">
+          <div class="week-day-name">${WEEK_DAYS_DISPLAY[idx]}</div>
+          <div class="week-day-info">
+            <span class="week-day-rest">Descanso</span>
+          </div>
+        </div>
+      `;
+    });
+  } else {
+    const all = mergeWorkouts();
+    const days = all[currentGender] || [];
+
+    WEEK_DAYS.forEach((dayKey, idx) => {
+      const dayIndex = (idx + 1) % 7;
+      const dayWorkout = days.find(d => d.dayIndex === dayIndex && !d.restDay);
+      const dayWorkouts = days.filter(d => d.dayIndex === dayIndex);
+      const restDay = days.find(d => d.dayIndex === dayIndex && d.restDay);
+      const isToday = dayIndex === todayIdx;
+      const hasRestExercises = restDay && isRestDayWithExercises(restDay.id, currentGender);
+
+      let onclickAttr = '';
+      if (dayWorkout) {
+        onclickAttr = `selectDay('${dayWorkout.id}')`;
+      } else if (restDay) {
+        onclickAttr = `selectRestDay('${restDay.id}')`;
+      }
+
+      html += `
+        <div class="week-day-row ${isToday ? 'today' : ''} ${hasRestExercises ? 'has-exercises' : ''}" onclick="${onclickAttr}">
+          <div class="week-day-name">${WEEK_DAYS_DISPLAY[idx]}</div>
+          <div class="week-day-info">
+            ${dayWorkouts.length > 0
+              ? dayWorkouts.map(w => `
+                <div class="week-day-workout">
+                  <span class="week-day-workout-title">${w.title}</span>
+                  <span class="week-day-workout-exercises">${w.exercises.length} ex.</span>
+                  ${progress[w.id] ? '<span class="week-day-done">✓</span>' : ''}
+                </div>
+              `).join('')
+              : hasRestExercises
+                ? `<div class="week-day-workout">
+                    <span class="week-day-workout-title">Treino Livre</span>
+                    <span class="week-day-workout-exercises">${(loadRestDayExercises(currentGender)[restDay.id]?.exercises || []).length} ex.</span>
+                  </div>`
+                : '<span class="week-day-rest">Descanso</span>'
+            }
+          </div>
+          ${isToday ? '<span class="today-badge-sm">HOJE</span>' : ''}
+        </div>
+      `;
+    });
+
+    const customDays = (currentGender && customWorkouts[currentGender]) || [];
+    if (customDays.length > 0) {
+      html += `<div class="section-label-custom">⭐ TREINOS PERSONALIZADOS</div>`;
+      customDays.forEach(day => {
+        html += renderDayCard(day, todayIdx, progress, true);
+      });
+    }
   }
 
   html += `</div>`;
@@ -863,8 +943,13 @@ function goHome() {
 }
 
 function selectDay(dayId) {
-  const all = mergeWorkouts();
-  currentWorkout = (all[currentGender] || []).find(d => d.id === dayId);
+  if (!currentUserIsAdmin && currentUserId && userWorkouts[currentUserId]) {
+    currentWorkout = userWorkouts[currentUserId].find(d => d.id === dayId);
+  }
+  if (!currentWorkout) {
+    const all = mergeWorkouts();
+    currentWorkout = (all[currentGender] || []).find(d => d.id === dayId);
+  }
   if (!currentWorkout) return;
   exerciseStates = loadExerciseStates(currentGender, dayId);
   activeExercise = null;
@@ -1685,7 +1770,7 @@ function renderBuilderUserDays() {
   if (!user) { renderBuilder(); return; }
 
   const gender = user.gender || 'mulher';
-  const customDays = customWorkouts[gender] || [];
+  const userDays = userWorkouts[user.id] || [];
 
   app.innerHTML = `
     ${renderTabBar()}
@@ -1698,13 +1783,13 @@ function renderBuilderUserDays() {
       <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:12px;letter-spacing:1px;font-weight:700;">DIAS DA SEMANA</div>
       ${WEEK_DAYS_DISPLAY.map((day, idx) => {
         const dayIndex = (idx + 1) % 7;
-        const dayWorkout = customDays.find(d => d.dayIndex === dayIndex);
-        const exCount = dayWorkout ? dayWorkout.exercises.length : 0;
+        const dayWorkout = userDays.find(d => d.dayIndex === dayIndex);
+        const exCount = dayWorkout && dayWorkout.exercises ? dayWorkout.exercises.length : 0;
         return `
           <div class="week-day-row" onclick="selectBuilderDay(${dayIndex}, '${day}')">
             <div class="week-day-name">${day}</div>
             <div class="week-day-info">
-              ${dayWorkout
+              ${dayWorkout && exCount > 0
                 ? `<div class="week-day-workout">
                     <span class="week-day-workout-title">${dayWorkout.title}</span>
                     <span class="week-day-workout-exercises">${exCount} ex.</span>
@@ -1730,11 +1815,10 @@ function renderBuilderDayExercises() {
   const day = builderSelectedDay;
   if (!user || !day) { renderBuilder(); return; }
 
-  const gender = user.gender || 'mulher';
-  const customDays = customWorkouts[gender] || [];
-  const dayWorkout = customDays.find(d => d.dayIndex === day.dayIndex);
+  const userDays = userWorkouts[user.id] || [];
+  const dayWorkout = userDays.find(d => d.dayIndex === day.dayIndex);
 
-  const exercises = dayWorkout ? dayWorkout.exercises : [];
+  const exercises = dayWorkout && dayWorkout.exercises ? dayWorkout.exercises : [];
 
   app.innerHTML = `
     ${renderTabBar()}
@@ -1790,20 +1874,20 @@ function addBuilderExerciseFromPicker(exerciseId) {
   const ex = db.find(e => e.id === exerciseId);
   if (!ex || !builderTargetUser || !builderSelectedDay) return;
 
-  const gender = builderTargetUser.gender || 'mulher';
-  if (!customWorkouts[gender]) customWorkouts[gender] = [];
+  const userId = builderTargetUser.id;
+  if (!userWorkouts[userId]) userWorkouts[userId] = [];
 
-  let dayWorkout = customWorkouts[gender].find(d => d.dayIndex === builderSelectedDay.dayIndex);
+  let dayWorkout = userWorkouts[userId].find(d => d.dayIndex === builderSelectedDay.dayIndex);
   if (!dayWorkout) {
     dayWorkout = {
-      id: `cw_${builderTargetUserId}_${builderSelectedDay.dayIndex}`,
+      id: `cw_${userId}_${builderSelectedDay.dayIndex}`,
       day: builderSelectedDay.dayName,
       dayIndex: builderSelectedDay.dayIndex,
       title: builderSelectedDay.dayName,
       restDay: false,
       exercises: []
     };
-    customWorkouts[gender].push(dayWorkout);
+    userWorkouts[userId].push(dayWorkout);
   }
 
   dayWorkout.exercises.push({
@@ -1816,15 +1900,15 @@ function addBuilderExerciseFromPicker(exerciseId) {
     tips: ''
   });
 
-  saveCustomWorkouts(customWorkouts);
+  saveUserWorkouts(userId, userWorkouts[userId]);
   pickerMode = false;
   renderBuilderDayExercises();
 }
 
 function removeBuilderExerciseFromDay(index) {
-  const gender = builderTargetUser.gender || 'mulher';
-  const customDays = customWorkouts[gender] || [];
-  const dayWorkout = customDays.find(d => d.dayIndex === builderSelectedDay.dayIndex);
+  const userId = builderTargetUser.id;
+  const userDays = userWorkouts[userId] || [];
+  const dayWorkout = userDays.find(d => d.dayIndex === builderSelectedDay.dayIndex);
   if (!dayWorkout) return;
 
   const exName = dayWorkout.exercises[index]?.name || 'este exercício';
@@ -1833,10 +1917,10 @@ function removeBuilderExerciseFromDay(index) {
   dayWorkout.exercises.splice(index, 1);
 
   if (dayWorkout.exercises.length === 0) {
-    customWorkouts[gender] = customDays.filter(d => d.dayIndex !== builderSelectedDay.dayIndex);
+    userWorkouts[userId] = userDays.filter(d => d.dayIndex !== builderSelectedDay.dayIndex);
   }
 
-  saveCustomWorkouts(customWorkouts);
+  saveUserWorkouts(userId, userWorkouts[userId]);
   renderBuilderDayExercises();
 }
 
@@ -1888,9 +1972,9 @@ function addExerciseFromPicker(exerciseId) {
   if (!ex) return;
 
   if (swappingExerciseIdx >= 0 && builderTargetUser && builderSelectedDay) {
-    const gender = builderTargetUser.gender || 'mulher';
-    const customDays = customWorkouts[gender] || [];
-    const dayWorkout = customDays.find(d => d.dayIndex === builderSelectedDay.dayIndex);
+    const userId = builderTargetUser.id;
+    const userDays = userWorkouts[userId] || [];
+    const dayWorkout = userDays.find(d => d.dayIndex === builderSelectedDay.dayIndex);
     if (dayWorkout && dayWorkout.exercises[swappingExerciseIdx]) {
       dayWorkout.exercises[swappingExerciseIdx] = {
         ...dayWorkout.exercises[swappingExerciseIdx],
@@ -1898,7 +1982,7 @@ function addExerciseFromPicker(exerciseId) {
         image: `${ex.gif}.gif`,
         muscle: ex.muscle
       };
-      saveCustomWorkouts(customWorkouts);
+      saveUserWorkouts(userId, userWorkouts[userId]);
     }
     swappingExerciseIdx = -1;
     closePicker();
@@ -2460,6 +2544,7 @@ loadWorkouts().then(async () => {
   await loadRemoteConfig();
   loadRestTime();
   if (currentUserId && authToken) {
+    await loadUserWorkouts(currentUserId);
     history.replaceState({ view: 'home' }, '', '#/');
     renderHome();
   } else if (currentUserId && !authToken) {
