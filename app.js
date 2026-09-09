@@ -172,6 +172,23 @@ async function loadRemoteConfig() {
       if (saved) remoteConfig = JSON.parse(saved);
     } catch (e2) {}
   }
+
+  if (authToken && currentUserIsAdmin) {
+    try {
+      const users = await apiGet('/users');
+      if (users && Array.isArray(users)) {
+        remoteConfig.users = remoteConfig.users.filter(u => {
+          const apiUser = users.find(au => au.id === u.id);
+          return apiUser ? false : true;
+        });
+        users.forEach(au => {
+          if (!remoteConfig.users.find(u => u.id === au.id)) {
+            remoteConfig.users.push({ id: au.id, name: au.name, isAdmin: au.isAdmin, gender: au.gender, password: '' });
+          }
+        });
+      }
+    } catch (e) {}
+  }
 }
 
 function saveRemoteConfig() {
@@ -227,12 +244,10 @@ function checkSession() {
     const token = localStorage.getItem('auth_token');
     if (!raw) return false;
     const s = JSON.parse(raw);
-    const user = remoteConfig.users.find(u => u.id === s.id);
-    if (!user) return false;
-    currentUserId = user.id;
-    currentUserIsAdmin = !!user.isAdmin;
-    currentUserName = user.name;
-    currentGender = user.gender || null;
+    currentUserId = s.id;
+    currentUserIsAdmin = !!s.isAdmin;
+    currentUserName = s.name;
+    currentGender = s.gender || null;
     if (token) authToken = token;
     return true;
   } catch (e) { return false; }
@@ -259,6 +274,7 @@ async function handleLogin(e) {
   const userId = document.getElementById('login-user').value;
   const pass = document.getElementById('login-pass').value;
   if (await doLogin(userId, pass)) {
+    await loadRemoteConfig();
     loadWorkouts().then(() => {
       loadRestTime();
       history.replaceState({ view: 'home' }, '', '#/');
@@ -2440,9 +2456,10 @@ function initFromUrl() {
 window.addEventListener('popstate', handlePopState);
 
 loadWorkouts().then(async () => {
+  checkSession();
   await loadRemoteConfig();
   loadRestTime();
-  if (checkSession()) {
+  if (currentUserId) {
     history.replaceState({ view: 'home' }, '', '#/');
     renderHome();
   } else {
