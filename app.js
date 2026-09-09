@@ -2459,9 +2459,11 @@ loadWorkouts().then(async () => {
   checkSession();
   await loadRemoteConfig();
   loadRestTime();
-  if (currentUserId) {
+  if (currentUserId && authToken) {
     history.replaceState({ view: 'home' }, '', '#/');
     renderHome();
+  } else if (currentUserId && !authToken) {
+    doLogout();
   } else {
     renderLogin();
   }
