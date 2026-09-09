@@ -2265,8 +2265,6 @@ function filterAdminExercises() {
       ex.muscle.toLowerCase().includes(query)
     );
   }
-  filtered = filtered.slice(0, 50);
-
   const listEl = document.getElementById('admin-exercise-list');
   if (!listEl) return;
 
