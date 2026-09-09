@@ -815,14 +815,14 @@ function renderDayList() {
       </div>
   `;
 
-  if (!currentUserIsAdmin && userDays.length > 0) {
+  if (!currentUserIsAdmin) {
     WEEK_DAYS.forEach((dayKey, idx) => {
       const dayIndex = (idx + 1) % 7;
       const dayWorkout = userDays.find(d => d.dayIndex === dayIndex);
       const isToday = dayIndex === todayIdx;
 
       html += `
-        <div class="week-day-row ${isToday ? 'today' : ''}" onclick="${dayWorkout ? `selectDay('${dayWorkout.id}')` : ''}">
+        <div class="week-day-row ${isToday ? 'today' : ''}" onclick="${dayWorkout && dayWorkout.exercises && dayWorkout.exercises.length > 0 ? `selectDay('${dayWorkout.id}')` : ''}">
           <div class="week-day-name">${WEEK_DAYS_DISPLAY[idx]}</div>
           <div class="week-day-info">
             ${dayWorkout && dayWorkout.exercises && dayWorkout.exercises.length > 0
@@ -835,17 +835,6 @@ function renderDayList() {
             }
           </div>
           ${isToday ? '<span class="today-badge-sm">HOJE</span>' : ''}
-        </div>
-      `;
-    });
-  } else if (!currentUserIsAdmin) {
-    WEEK_DAYS.forEach((dayKey, idx) => {
-      html += `
-        <div class="week-day-row">
-          <div class="week-day-name">${WEEK_DAYS_DISPLAY[idx]}</div>
-          <div class="week-day-info">
-            <span class="week-day-rest">Descanso</span>
-          </div>
         </div>
       `;
     });
@@ -1040,8 +1029,10 @@ function renderWorkout() {
             <div class="exercise-details">${ex.sets}x ${ex.reps}${lastWeight ? ` • ${lastWeight}kg` : ''}</div>
             ${!completed && completedSets > 0 ? `<div class="exercise-progress">Séries: ${completedSets}/${ex.sets}</div>` : ''}
           </div>
+          ${currentUserIsAdmin ? `
           <button class="exercise-edit-btn" onclick="event.stopPropagation(); swapExercise(${idx})">🔄</button>
           <button class="exercise-remove-btn" onclick="event.stopPropagation(); removeExerciseFromWorkout(${idx})">✕</button>
+          ` : ''}
           ${completed ? '<span class="exercise-check done">✓</span>' : '<span class="exercise-check">›</span>'}
         </div>
       </div>
@@ -1066,14 +1057,17 @@ function renderWorkout() {
   html += `
     <div class="btn-row" style="justify-content: center;">
       <button class="btn-back-days" onclick="goDayList()">← Voltar</button>
-      ${isRestDayWorkout && currentWorkout.exercises.length > 0
-        ? `<button class="btn-reset" onclick="resetRestDay()">Limpar Treino</button>`
-        : `<button class="btn-reset" onclick="resetProgress()">Zerar Treinos</button>`
-      }
+      ${currentUserIsAdmin ? (
+        isRestDayWorkout && currentWorkout.exercises.length > 0
+          ? `<button class="btn-reset" onclick="resetRestDay()">Limpar Treino</button>`
+          : `<button class="btn-reset" onclick="resetProgress()">Zerar Treinos</button>`
+      ) : ''}
     </div>
+    ${currentUserIsAdmin ? `
     <div class="btn-row" style="justify-content: center; margin-top: 8px;">
       <button class="btn-reset" style="background:var(--accent);" onclick="openAddToWorkoutPicker()">+ Adicionar Exercício</button>
     </div>
+    ` : ''}
   </div>`;
   app.innerHTML = html;
 }
