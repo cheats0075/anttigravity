@@ -1441,6 +1441,65 @@ body {
   color: var(--text-secondary);
 }
 
+.builder-user-search {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.builder-user-search .builder-name-input {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.builder-search-btn {
+  padding: 14px 24px;
+  border: none;
+  border-radius: 14px;
+  background: var(--accent-gradient);
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.builder-search-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
+}
+
+.builder-action-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 210, 255, 0.2);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition);
+  flex-shrink: 0;
+}
+
+.builder-action-btn.swap:hover {
+  background: rgba(0, 210, 255, 0.15);
+  border-color: var(--accent);
+}
+
+.builder-action-btn.delete {
+  border-color: rgba(239, 68, 68, 0.3);
+  color: var(--danger);
+}
+
+.builder-action-btn.delete:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: var(--danger);
+}
+
 .builder-name-input {
   width: 100%;
   padding: 14px 16px;
