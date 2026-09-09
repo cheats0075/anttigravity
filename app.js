@@ -1982,6 +1982,7 @@ function closeBuilderMultiPicker() {
     renderBuilder();
   }
 }
+function openBuilderExercisePicker() {
   pickerMode = true;
   pickerOrigin = 'builder';
   librarySearchQuery = '';
