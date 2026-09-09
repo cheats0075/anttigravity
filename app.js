@@ -646,7 +646,7 @@ function renderDayList() {
                   <span class="week-day-workout-title">Treino Livre</span>
                   <span class="week-day-workout-exercises">${(loadRestDayExercises(currentGender)[restDay.id]?.exercises || []).length} ex.</span>
                 </div>`
-              : '<span class="week-day-rest">Descanso</span>'
+              : '<span class="week-day-rest">Adicionar</span>'
           }
         </div>
         ${isToday ? '<span class="today-badge-sm">HOJE</span>' : ''}
