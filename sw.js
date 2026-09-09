@@ -1,4 +1,4 @@
-const CACHE_NAME = 'anttigravity-v13';
+const CACHE_NAME = 'anttigravity-v14';
 const GIF_CACHE = 'anttigravity-gifs-v1';
 
 self.addEventListener('install', event => {
