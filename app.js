@@ -278,12 +278,13 @@ async function handleLogin(e) {
   if (errorEl) errorEl.style.display = 'none';
 
   if (await doLogin(userId, pass)) {
-    await loadRemoteConfig();
-    await loadWorkouts();
-    await loadUserWorkouts(currentUserId);
-    loadRestTime();
     history.replaceState({ view: 'home' }, '', '#/');
     renderHome();
+    loadRemoteConfig().then(async () => {
+      await loadWorkouts();
+      await loadUserWorkouts(currentUserId);
+      renderHome();
+    });
   } else {
     if (btn) { btn.textContent = 'Entrar'; btn.disabled = false; }
     if (errorEl) errorEl.style.display = 'block';
@@ -2658,38 +2659,17 @@ function initFromUrl() {
 
 window.addEventListener('popstate', handlePopState);
 
-app.innerHTML = `
-  <div class="screen login-screen">
-    <div class="login-logo">ANTIGRAVITY</div>
-    <div class="login-subtitle" id="loading-text">Conectando ao servidor...</div>
-    <div style="margin-top:24px;display:flex;justify-content:center;">
-      <div class="csa-rest-circle" style="width:60px;height:60px;">
-        <svg viewBox="0 0 200 200" style="width:100%;height:100%;">
-          <circle class="csa-rest-track" cx="100" cy="100" r="90" fill="none" stroke="#333" stroke-width="6"/>
-          <circle cx="100" cy="100" r="90" fill="none" stroke="#00ff88" stroke-width="6"
-            stroke-dasharray="565" stroke-dashoffset="420"
-            style="animation: spin 2s linear infinite; transform-origin: center;"/>
-        </svg>
-      </div>
-    </div>
-  </div>
-`;
+checkSession();
+loadRestTime();
 
-const style = document.createElement('style');
-style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
-document.head.appendChild(style);
-
-loadWorkouts().then(async () => {
-  checkSession();
-  await loadRemoteConfig();
-  loadRestTime();
-  if (currentUserId && authToken) {
+if (currentUserId && authToken) {
+  renderHome();
+  loadWorkouts().then(async () => {
+    await loadRemoteConfig();
     await loadUserWorkouts(currentUserId);
-    history.replaceState({ view: 'home' }, '', '#/');
     renderHome();
-  } else if (currentUserId && !authToken) {
-    doLogout();
-  } else {
-    renderLogin();
-  }
-});
+  });
+} else {
+  renderLogin();
+  loadWorkouts().then(() => loadRemoteConfig());
+}
