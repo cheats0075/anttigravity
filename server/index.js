@@ -45,6 +45,37 @@ app.get('/api/config', (req, res) => {
   }
 });
 
+app.put('/api/config', (req, res) => {
+  try {
+    const { readConfig, writeConfig } = require('./data/store');
+    const { authMiddleware } = require('./middleware/auth');
+
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ error: 'Token não fornecido' });
+
+    const jwt = require('jsonwebtoken');
+    const { JWT_SECRET } = require('./middleware/auth');
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (!decoded.isAdmin) return res.status(403).json({ error: 'Apenas admin' });
+
+    const incoming = req.body;
+    const config = readConfig();
+
+    if (incoming.exerciseEdits) {
+      config.exerciseEdits = incoming.exerciseEdits;
+    }
+    if (incoming.weeklySchedule) {
+      config.weeklySchedule = incoming.weeklySchedule;
+    }
+
+    writeConfig(config);
+    res.json({ message: 'Configuração salva com sucesso' });
+  } catch (err) {
+    console.error('Error saving config:', err);
+    res.status(500).json({ error: 'Erro ao salvar configuração' });
+  }
+});
+
 app.use(express.static(path.join(__dirname, '..')));
 
 app.get('*', (req, res) => {
