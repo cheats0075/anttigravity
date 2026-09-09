@@ -26,6 +26,24 @@ async function initDB() {
       );
     `);
     console.log('PostgreSQL tables initialized');
+
+    const { rows } = await client.query('SELECT COUNT(*)::int as count FROM kv_store');
+    if (rows[0].count === 0) {
+      console.log('Banco vazio, populando com dados iniciais...');
+      const dataMap = {
+        config: readJSON('config.json') || { users: [], exerciseEdits: {}, weeklySchedule: {} },
+        workouts: readJSON('workouts.json') || { homem: [], mulher: [] },
+        history: readJSON('history.json') || {},
+        user_workouts: readJSON('user-workouts.json') || {}
+      };
+      for (const [key, value] of Object.entries(dataMap)) {
+        await client.query(
+          'INSERT INTO kv_store (key, value, updated_at) VALUES ($1, $2, NOW()) ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = NOW()',
+          [key, JSON.stringify(value)]
+        );
+      }
+      console.log('Dados iniciais inseridos com sucesso!');
+    }
   } finally {
     client.release();
   }
