@@ -113,7 +113,8 @@ function doLogin(userId, password) {
   currentUserId = user.id;
   currentUserIsAdmin = !!user.isAdmin;
   currentUserName = user.name;
-  try { localStorage.setItem('current_session', JSON.stringify({ id: user.id, name: user.name, isAdmin: user.isAdmin })); } catch (e) {}
+  currentGender = user.gender || null;
+  try { localStorage.setItem('current_session', JSON.stringify({ id: user.id, name: user.name, isAdmin: user.isAdmin, gender: user.gender || null })); } catch (e) {}
   return true;
 }
 
@@ -137,6 +138,7 @@ function checkSession() {
     currentUserId = user.id;
     currentUserIsAdmin = !!user.isAdmin;
     currentUserName = user.name;
+    currentGender = user.gender || null;
     return true;
   } catch (e) { return false; }
 }
@@ -164,8 +166,15 @@ function handleLogin(e) {
   if (doLogin(userId, pass)) {
     loadWorkouts().then(() => {
       loadRestTime();
-      history.replaceState({ view: 'home' }, '', '#/');
-      renderHome();
+      if (currentUserIsAdmin) {
+        history.replaceState({ view: 'home' }, '', '#/');
+        renderHome();
+      } else {
+        exerciseStates = {};
+        const genderParam = currentGender || 'homem';
+        history.replaceState({ view: 'dayList', gender: genderParam }, '', `#/${genderParam}`);
+        renderDayList();
+      }
     });
   } else {
     document.getElementById('login-error').style.display = 'block';
@@ -442,20 +451,30 @@ function renderView(view) {
 
 function renderTabBar() {
   if (currentView === 'activeExercise') return '';
+  if (currentUserIsAdmin) {
+    return `
+      <div class="tab-bar">
+        <div class="tab-item ${currentTab === 'home' ? 'active' : ''}" onclick="switchTab('home')">
+          <div class="icon">🏠</div>
+          <span>Início</span>
+        </div>
+        <div class="tab-item ${currentTab === 'library' ? 'active' : ''}" onclick="switchTab('library')">
+          <div class="icon">📚</div>
+          <span>Biblioteca</span>
+        </div>
+        <div class="tab-item ${currentTab === 'builder' ? 'active' : ''}" onclick="switchTab('builder')">
+          <div class="icon">🔧</div>
+          <span>Criar</span>
+        </div>
+        <div class="tab-item ${currentTab === 'history' ? 'active' : ''}" onclick="switchTab('history')">
+          <div class="icon">📋</div>
+          <span>Histórico</span>
+        </div>
+      </div>
+    `;
+  }
   return `
     <div class="tab-bar">
-      <div class="tab-item ${currentTab === 'home' ? 'active' : ''}" onclick="switchTab('home')">
-        <div class="icon">🏠</div>
-        <span>Início</span>
-      </div>
-      <div class="tab-item ${currentTab === 'library' ? 'active' : ''}" onclick="switchTab('library')">
-        <div class="icon">📚</div>
-        <span>Biblioteca</span>
-      </div>
-      <div class="tab-item ${currentTab === 'builder' ? 'active' : ''}" onclick="switchTab('builder')">
-        <div class="icon">🔧</div>
-        <span>Criar</span>
-      </div>
       <div class="tab-item ${currentTab === 'history' ? 'active' : ''}" onclick="switchTab('history')">
         <div class="icon">📋</div>
         <span>Histórico</span>
@@ -489,7 +508,11 @@ function switchTab(tab) {
     renderBuilder();
   } else if (tab === 'history') {
     currentView = 'history';
-    history.pushState({ view: 'history' }, '', '#/history');
+    if (!currentUserIsAdmin && currentGender) {
+      history.pushState({ view: 'history', gender: currentGender }, '', `#/${currentGender}/history`);
+    } else {
+      history.pushState({ view: 'history' }, '', '#/history');
+    }
     renderHistory();
   }
 }
@@ -581,8 +604,14 @@ function renderDayList() {
       <div class="day-list-header">
         <button class="btn-back-days" onclick="goHome()">← Voltar</button>
         <div class="day-list-title">${currentGender === 'homem' ? 'HOMEM' : 'MULHER'}</div>
-        <button class="btn-history" onclick="showHistory()">Histórico</button>
+        ${currentUserIsAdmin ? `<button class="btn-history" onclick="showHistory()">Histórico</button>` : ''}
       </div>
+      ${!currentUserIsAdmin ? `
+        <div class="user-header-bar">
+          <span class="user-header-name">👤 ${currentUserName}</span>
+          <button class="user-header-logout" onclick="doLogout()">Sair</button>
+        </div>
+      ` : ''}
   `;
 
   WEEK_DAYS.forEach((dayKey, idx) => {
@@ -669,8 +698,12 @@ function goHome() {
   activeExercise = null;
   isResting = false;
   workoutStartTime = null;
-  currentTab = 'home';
-  navigate('home');
+  if (currentUserIsAdmin) {
+    currentTab = 'home';
+    navigate('home');
+  } else {
+    history.back();
+  }
 }
 
 function selectDay(dayId) {
@@ -1861,13 +1894,17 @@ function renderAdmin() {
         <div></div>
       </div>
 
-      <div class="admin-section">
+        <div class="admin-section">
         <div class="admin-section-title">Usuários</div>
         <div class="admin-user-list">${usersHtml}</div>
         <div class="admin-add-user">
           <input class="admin-input" type="number" id="new-user-id" placeholder="Login" inputmode="numeric">
           <input class="admin-input" type="password" id="new-user-pass" placeholder="Senha" inputmode="numeric">
           <input class="admin-input" type="text" id="new-user-name" placeholder="Nome do usuário">
+          <select class="admin-input" id="new-user-gender">
+            <option value="homem">Homem</option>
+            <option value="mulher">Mulher</option>
+          </select>
           <button class="admin-btn" onclick="createUser()">+ Criar</button>
         </div>
       </div>
@@ -1951,9 +1988,10 @@ function createUser() {
   const id = parseInt(document.getElementById('new-user-id')?.value, 10);
   const pass = document.getElementById('new-user-pass')?.value?.trim();
   const name = document.getElementById('new-user-name')?.value?.trim();
+  const gender = document.getElementById('new-user-gender')?.value || 'mulher';
   if (!id || !pass || !name) { alert('Preencha ID, senha e nome.'); return; }
   if (remoteConfig.users.find(u => u.id === id)) { alert('Já existe um usuário com esse Login.'); return; }
-  remoteConfig.users.push({ id, password: pass, name, isAdmin: false });
+  remoteConfig.users.push({ id, password: pass, name, isAdmin: false, gender });
   saveRemoteConfig();
   alert(`Usuário ${name} (#${id}) criado!`);
   document.getElementById('new-user-id').value = '';
@@ -2114,8 +2152,15 @@ loadWorkouts().then(async () => {
   await loadRemoteConfig();
   loadRestTime();
   if (checkSession()) {
-    history.replaceState({ view: 'home' }, '', '#/');
-    initFromUrl();
+    if (currentUserIsAdmin) {
+      history.replaceState({ view: 'home' }, '', '#/');
+      initFromUrl();
+    } else {
+      const genderParam = currentGender || 'homem';
+      history.replaceState({ view: 'dayList', gender: genderParam }, '', `#/${genderParam}`);
+      exerciseStates = {};
+      renderDayList();
+    }
   } else {
     renderLogin();
   }

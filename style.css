@@ -180,7 +180,7 @@ body {
   width: 100%;
   max-width: 500px;
   display: flex;
-  justify-content: space-around;
+  justify-content: center;
   padding: 12px 0;
   padding-bottom: max(12px, env(safe-area-inset-bottom));
   background: rgba(255, 255, 255, 0.95);
@@ -1983,7 +1983,7 @@ body {
 
 .admin-add-user {
   display: grid;
-  grid-template-columns: 80px 1fr 1fr auto;
+  grid-template-columns: 80px 1fr 1fr 100px auto;
   gap: 8px;
   align-items: center;
 }
@@ -2152,6 +2152,41 @@ body {
 
 .schedule-toggle input:checked + .schedule-slider::before {
   transform: translateX(20px);
+}
+
+/* ===== USER HEADER BAR (Common User) ===== */
+.user-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  background: var(--bg-card);
+  border: var(--glass-border);
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.user-header-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.user-header-logout {
+  padding: 8px 18px;
+  border: 2px solid var(--danger);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--danger);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.user-header-logout:hover {
+  background: rgba(239, 68, 68, 0.08);
 }
 
 @media (prefers-reduced-motion: reduce) {
