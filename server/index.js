@@ -24,6 +24,27 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+app.get('/api/config', (req, res) => {
+  try {
+    const { readConfig } = require('./data/store');
+    const config = readConfig();
+    const safeConfig = {
+      users: config.users.map(u => ({
+        id: u.id,
+        name: u.name,
+        isAdmin: u.isAdmin,
+        gender: u.gender
+      })),
+      exerciseEdits: config.exerciseEdits || {},
+      weeklySchedule: config.weeklySchedule || {}
+    };
+    res.json(safeConfig);
+  } catch (err) {
+    console.error('Error reading config:', err);
+    res.status(500).json({ error: 'Erro ao ler configuração' });
+  }
+});
+
 app.use(express.static(path.join(__dirname, '..')));
 
 app.get('*', (req, res) => {
