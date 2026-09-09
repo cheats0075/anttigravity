@@ -20,13 +20,6 @@
       "name": "BRUNA",
       "isAdmin": false,
       "gender": "mulher"
-    },
-    {
-      "id": 12,
-      "password": "1212",
-      "name": "TESTE",
-      "isAdmin": false,
-      "gender": "homem"
     }
   ],
   "exerciseEdits": {},
