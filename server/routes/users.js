@@ -5,9 +5,9 @@ const { authMiddleware, adminMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.get('/', authMiddleware, adminMiddleware, (req, res) => {
+router.get('/', authMiddleware, adminMiddleware, async (req, res) => {
   try {
-    const config = readConfig();
+    const config = await readConfig();
     const users = config.users.map(u => ({
       id: u.id,
       name: u.name,
@@ -21,9 +21,9 @@ router.get('/', authMiddleware, adminMiddleware, (req, res) => {
   }
 });
 
-router.get('/:id', authMiddleware, (req, res) => {
+router.get('/:id', authMiddleware, async (req, res) => {
   try {
-    const config = readConfig();
+    const config = await readConfig();
     const userId = parseInt(req.params.id, 10);
 
     if (req.user.id !== userId && !req.user.isAdmin) {
@@ -47,7 +47,7 @@ router.get('/:id', authMiddleware, (req, res) => {
   }
 });
 
-router.post('/', authMiddleware, adminMiddleware, (req, res) => {
+router.post('/', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { id, name, password, gender, isAdmin } = req.body;
 
@@ -55,7 +55,7 @@ router.post('/', authMiddleware, adminMiddleware, (req, res) => {
       return res.status(400).json({ error: 'ID, nome e senha são obrigatórios' });
     }
 
-    const config = readConfig();
+    const config = await readConfig();
     const exists = config.users.find(u => u.id === parseInt(id, 10));
 
     if (exists) {
@@ -71,7 +71,7 @@ router.post('/', authMiddleware, adminMiddleware, (req, res) => {
     };
 
     config.users.push(newUser);
-    writeConfig(config);
+    await writeConfig(config);
 
     res.status(201).json({
       id: newUser.id,
@@ -85,12 +85,12 @@ router.post('/', authMiddleware, adminMiddleware, (req, res) => {
   }
 });
 
-router.put('/:id', authMiddleware, adminMiddleware, (req, res) => {
+router.put('/:id', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const userId = parseInt(req.params.id, 10);
     const { name, password, gender, isAdmin } = req.body;
 
-    const config = readConfig();
+    const config = await readConfig();
     const userIndex = config.users.findIndex(u => u.id === userId);
 
     if (userIndex === -1) {
@@ -102,7 +102,7 @@ router.put('/:id', authMiddleware, adminMiddleware, (req, res) => {
     if (gender !== undefined) config.users[userIndex].gender = gender;
     if (isAdmin !== undefined) config.users[userIndex].isAdmin = isAdmin;
 
-    writeConfig(config);
+    await writeConfig(config);
 
     res.json({
       id: config.users[userIndex].id,
@@ -116,10 +116,10 @@ router.put('/:id', authMiddleware, adminMiddleware, (req, res) => {
   }
 });
 
-router.delete('/:id', authMiddleware, adminMiddleware, (req, res) => {
+router.delete('/:id', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const userId = parseInt(req.params.id, 10);
-    const config = readConfig();
+    const config = await readConfig();
     const userIndex = config.users.findIndex(u => u.id === userId);
 
     if (userIndex === -1) {
@@ -127,7 +127,7 @@ router.delete('/:id', authMiddleware, adminMiddleware, (req, res) => {
     }
 
     config.users.splice(userIndex, 1);
-    writeConfig(config);
+    await writeConfig(config);
 
     res.json({ message: 'Usuário removido com sucesso' });
   } catch (err) {

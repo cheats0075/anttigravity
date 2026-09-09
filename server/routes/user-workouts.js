@@ -4,7 +4,7 @@ const { authMiddleware, adminMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.get('/:userId', authMiddleware, (req, res) => {
+router.get('/:userId', authMiddleware, async (req, res) => {
   try {
     const userId = parseInt(req.params.userId, 10);
 
@@ -12,7 +12,7 @@ router.get('/:userId', authMiddleware, (req, res) => {
       return res.status(403).json({ error: 'Acesso negado' });
     }
 
-    const allWorkouts = readUserWorkouts();
+    const allWorkouts = await readUserWorkouts();
     const userWorkouts = allWorkouts[userId.toString()] || [];
 
     res.json(userWorkouts);
@@ -22,7 +22,7 @@ router.get('/:userId', authMiddleware, (req, res) => {
   }
 });
 
-router.put('/:userId', authMiddleware, adminMiddleware, (req, res) => {
+router.put('/:userId', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const userId = parseInt(req.params.userId, 10);
     const days = req.body;
@@ -31,10 +31,10 @@ router.put('/:userId', authMiddleware, adminMiddleware, (req, res) => {
       return res.status(400).json({ error: 'Dados inválidos. Envie array de dias.' });
     }
 
-    const allWorkouts = readUserWorkouts();
+    const allWorkouts = await readUserWorkouts();
     allWorkouts[userId.toString()] = days;
 
-    const success = writeUserWorkouts(allWorkouts);
+    const success = await writeUserWorkouts(allWorkouts);
     if (success) {
       res.json({ message: 'Treinos do usuário atualizados com sucesso' });
     } else {
@@ -46,13 +46,13 @@ router.put('/:userId', authMiddleware, adminMiddleware, (req, res) => {
   }
 });
 
-router.delete('/:userId', authMiddleware, adminMiddleware, (req, res) => {
+router.delete('/:userId', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const userId = parseInt(req.params.userId, 10);
-    const allWorkouts = readUserWorkouts();
+    const allWorkouts = await readUserWorkouts();
 
     delete allWorkouts[userId.toString()];
-    writeUserWorkouts(allWorkouts);
+    await writeUserWorkouts(allWorkouts);
 
     res.json({ message: 'Treinos do usuário removidos com sucesso' });
   } catch (err) {
