@@ -4,7 +4,7 @@ const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.get('/:userId', authMiddleware, (req, res) => {
+router.get('/:userId', authMiddleware, async (req, res) => {
   try {
     const userId = parseInt(req.params.userId, 10);
 
@@ -12,7 +12,7 @@ router.get('/:userId', authMiddleware, (req, res) => {
       return res.status(403).json({ error: 'Acesso negado' });
     }
 
-    const history = readHistory();
+    const history = await readHistory();
     const userHistory = history[userId.toString()] || [];
 
     res.json(userHistory);
@@ -22,7 +22,7 @@ router.get('/:userId', authMiddleware, (req, res) => {
   }
 });
 
-router.post('/', authMiddleware, (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
   try {
     const { userId, workout, date, exercises } = req.body;
 
@@ -34,7 +34,7 @@ router.post('/', authMiddleware, (req, res) => {
       return res.status(403).json({ error: 'Acesso negado' });
     }
 
-    const history = readHistory();
+    const history = await readHistory();
     const userKey = userId.toString();
 
     if (!history[userKey]) {
@@ -49,7 +49,7 @@ router.post('/', authMiddleware, (req, res) => {
       completedAt: new Date().toISOString()
     });
 
-    writeHistory(history);
+    await writeHistory(history);
 
     res.status(201).json({ message: 'Histórico registrado com sucesso' });
   } catch (err) {

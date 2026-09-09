@@ -12,7 +12,7 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'ID e senha são obrigatórios' });
     }
 
-    const config = readConfig();
+    const config = await readConfig();
     const user = config.users.find(u => u.id === parseInt(id, 10));
 
     if (!user) {
