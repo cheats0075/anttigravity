@@ -37,8 +37,9 @@ let addingToWorkout = false;
 let swappingExerciseIdx = -1;
 let pickerOrigin = 'builder';
 let showBuilderForm = false;
-let adminScheduleUserId = null;
-let adminScheduleDayNum = null;
+let builderTargetUserId = null;
+let builderTargetUser = null;
+let builderSelectedDay = null;
 
 let customWorkouts = {};
 
@@ -197,34 +198,7 @@ function getAllWorkouts() {
 }
 
 function mergeWorkouts() {
-  const all = getAllWorkouts();
-  if (!currentUserId) return all;
-
-  const schedule = remoteConfig.weeklySchedule || {};
-  const userSchedule = schedule[String(currentUserId)];
-  if (!userSchedule) return all;
-
-  for (const gender of ['homem', 'mulher']) {
-    const defaults = all[gender] || [];
-    const updated = defaults.map(day => {
-      const dayData = userSchedule[String(day.dayIndex)];
-      if (!dayData) return day;
-      if (dayData.active === false) {
-        return { ...day, hidden: true };
-      }
-      if (dayData.exercises && dayData.exercises.length > 0) {
-        return {
-          ...day,
-          title: dayData.title || day.title,
-          exercises: dayData.exercises
-        };
-      }
-      return day;
-    });
-    all[gender] = updated.filter(d => !d.hidden);
-  }
-
-  return all;
+  return getAllWorkouts();
 }
 
 function loadRestTime() {
@@ -1504,89 +1478,222 @@ function renderBuilder() {
     return;
   }
 
-  const customDays = currentGender ? (customWorkouts[currentGender] || []) : [];
-
-  let listHtml = '';
-  if (!editingWorkoutId && customDays.length > 0) {
-    listHtml = `<div style="margin-bottom:24px;">
-      <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:12px;letter-spacing:1px;font-weight:700;">SEUS TREINOS</div>
-      ${customDays.map(d => `
-        <div class="day-card custom" onclick="editCustomWorkout('${d.id}')">
-          <div class="day-header">
-            <span class="day-name">${d.day}</span>
-            <span class="custom-tag">⭐ PERSONALIZADO</span>
-          </div>
-          <div class="day-title">${d.title}</div>
-          <div class="day-count">${d.exercises.length} exercícios</div>
-        </div>
-      `).join('')}
-    </div>`;
+  if (builderTargetUser && builderSelectedDay) {
+    renderBuilderDayExercises();
+    return;
   }
 
-  if (editingWorkoutId || showBuilderForm || builderExercises.length > 0 || builderName) {
-    const dayBtns = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo', 'Nenhum'].map(d => {
-      const val = d.toLowerCase();
-      return `<button class="${builderDay === val ? 'active' : ''}" onclick="setBuilderDay('${val}')">${d}</button>`;
-    }).join('');
-
-    const exItems = builderExercises.map((ex, i) => `
-      <div class="builder-exercise-item">
-        <div class="drag-handle" onclick="event.stopPropagation()">
-          <button onclick="moveBuilderExercise(${i}, -1)" style="background:none;border:none;color:var(--text-muted);font-size:0.8rem;cursor:pointer;">▲</button>
-          <button onclick="moveBuilderExercise(${i}, 1)" style="background:none;border:none;color:var(--text-muted);font-size:0.8rem;cursor:pointer;">▼</button>
-        </div>
-        <div class="builder-exercise-info">
-          <div class="name">${ex.name}</div>
-          <div class="muscle">${ex.muscle || ''}</div>
-        </div>
-        <div class="builder-exercise-sets">
-          <div>
-            <input type="number" value="${ex.sets}" min="1" max="20" onchange="updateBuilderExerciseSets(${i}, this.value)">
-            <span class="sets-label">Séries</span>
-          </div>
-          <div>
-            <input type="text" value="${ex.reps}" placeholder="10" onchange="updateBuilderExerciseReps(${i}, this.value)">
-            <span class="reps-label">Reps</span>
-          </div>
-        </div>
-        <button class="remove-btn" onclick="removeBuilderExercise(${i})">✕</button>
-      </div>
-    `).join('');
-
-    app.innerHTML = `
-      ${renderTabBar()}
-      <div class="screen builder-screen">
-        <div class="builder-header">
-          <h2>${editingWorkoutId ? 'Editar Treino' : 'Criar Treino'}</h2>
-          <button class="btn-back-days" onclick="showBuilderForm = false; editingWorkoutId = null; renderBuilder();">← Voltar</button>
-          <p>Personalize seu treino</p>
-        </div>
-        <input class="builder-name-input" type="text" placeholder="Nome do treino (ex: Meu Treino A)" value="${builderName}" oninput="builderName = this.value">
-        <div style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:8px;font-weight:600;">Para quem é o treino?</div>
-        <div class="builder-gender-select">
-          <button class="${builderGender === 'homem' ? 'active' : ''}" onclick="setBuilderGender('homem')">HOMEM</button>
-          <button class="${builderGender === 'mulher' ? 'active' : ''}" onclick="setBuilderGender('mulher')">MULHER</button>
-        </div>
-        <div class="builder-day-select">${dayBtns}</div>
-        <div style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:12px;font-weight:600;">Exercícios (${builderExercises.length})</div>
-        <div class="builder-exercise-list">${exItems}</div>
-        <button class="builder-add-btn" onclick="openExercisePicker()">+ Adicionar Exercício</button>
-        <button class="builder-save-btn" onclick="saveCustomWorkoutBuilder()">💾 Salvar Treino</button>
-      </div>
-    `;
-  } else {
-    app.innerHTML = `
-      ${renderTabBar()}
-      <div class="screen builder-screen">
-        <div class="builder-header">
-          <h2>Criar Treino</h2>
-          <p>Crie treinos personalizados</p>
-        </div>
-        <button class="home-btn today-btn" onclick="startNewWorkout()" style="margin-bottom:24px;">+ Novo Treino</button>
-        ${listHtml}
-      </div>
-    `;
+  if (builderTargetUser) {
+    renderBuilderUserDays();
+    return;
   }
+
+  app.innerHTML = `
+    ${renderTabBar()}
+    <div class="screen builder-screen">
+      <div class="builder-header">
+        <h2>Criar Treino</h2>
+        <p>Digite o número do aluno para gerenciar treinos</p>
+      </div>
+      <div class="builder-user-search">
+        <input class="builder-name-input" type="number" id="builder-user-input" placeholder="Número do aluno" inputmode="numeric" onkeydown="if(event.key==='Enter')loadBuilderUser()">
+        <button class="builder-search-btn" onclick="loadBuilderUser()">Buscar</button>
+      </div>
+      <div id="builder-user-result"></div>
+    </div>
+  `;
+}
+
+function loadBuilderUser() {
+  const input = document.getElementById('builder-user-input');
+  if (!input) return;
+  const uid = parseInt(input.value, 10);
+  if (!uid) return;
+
+  const user = remoteConfig.users.find(u => u.id === uid);
+  const resultEl = document.getElementById('builder-user-result');
+  if (!resultEl) return;
+
+  if (!user) {
+    resultEl.innerHTML = `<div style="text-align:center;padding:20px;color:var(--danger);">Usuário #${uid} não encontrado</div>`;
+    return;
+  }
+
+  builderTargetUserId = uid;
+  builderTargetUser = user;
+  builderSelectedDay = null;
+  renderBuilderUserDays();
+}
+
+function renderBuilderUserDays() {
+  const user = builderTargetUser;
+  if (!user) { renderBuilder(); return; }
+
+  const gender = user.gender || 'mulher';
+  const customDays = customWorkouts[gender] || [];
+
+  app.innerHTML = `
+    ${renderTabBar()}
+    <div class="screen builder-screen">
+      <div class="builder-header">
+        <h2>${user.name}</h2>
+        <button class="btn-back-days" onclick="builderTargetUserId = null; builderTargetUser = null; builderSelectedDay = null; renderBuilder();">← Voltar</button>
+        <p>Aluno #${user.id} — ${gender === 'homem' ? 'Homem' : 'Mulher'}</p>
+      </div>
+      <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:12px;letter-spacing:1px;font-weight:700;">DIAS DA SEMANA</div>
+      ${WEEK_DAYS_DISPLAY.map((day, idx) => {
+        const dayIndex = (idx + 1) % 7;
+        const dayWorkout = customDays.find(d => d.dayIndex === dayIndex);
+        const exCount = dayWorkout ? dayWorkout.exercises.length : 0;
+        return `
+          <div class="week-day-row" onclick="selectBuilderDay(${dayIndex}, '${day}')">
+            <div class="week-day-name">${day}</div>
+            <div class="week-day-info">
+              ${dayWorkout
+                ? `<div class="week-day-workout">
+                    <span class="week-day-workout-title">${dayWorkout.title}</span>
+                    <span class="week-day-workout-exercises">${exCount} ex.</span>
+                  </div>`
+                : '<span class="week-day-rest">Adicionar</span>'
+              }
+            </div>
+            <span class="exercise-check">›</span>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function selectBuilderDay(dayIndex, dayName) {
+  builderSelectedDay = { dayIndex, dayName };
+  renderBuilderDayExercises();
+}
+
+function renderBuilderDayExercises() {
+  const user = builderTargetUser;
+  const day = builderSelectedDay;
+  if (!user || !day) { renderBuilder(); return; }
+
+  const gender = user.gender || 'mulher';
+  const customDays = customWorkouts[gender] || [];
+  const dayWorkout = customDays.find(d => d.dayIndex === day.dayIndex);
+
+  const exercises = dayWorkout ? dayWorkout.exercises : [];
+
+  app.innerHTML = `
+    ${renderTabBar()}
+    <div class="screen builder-screen">
+      <div class="builder-header">
+        <h2>${user.name}</h2>
+        <button class="btn-back-days" onclick="builderSelectedDay = null; renderBuilderUserDays();">← Voltar</button>
+        <p>${day.dayName}</p>
+      </div>
+      ${exercises.length > 0 ? `
+        <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:12px;letter-spacing:1px;font-weight:700;">EXERCÍCIOS (${exercises.length})</div>
+        ${exercises.map((ex, i) => {
+          const dbEx = typeof EXERCISES_DB !== 'undefined' ? EXERCISES_DB.find(e => e.id === ex.id || e.name === ex.name) : null;
+          const gif = dbEx ? getExerciseGifPath(dbEx) : '';
+          return `
+            <div class="builder-exercise-item">
+              <img class="exercise-thumb" src="${gif}" alt="${ex.name}" onerror="this.style.display='none'">
+              <div class="builder-exercise-info">
+                <div class="name">${ex.name}</div>
+                <div class="muscle">${ex.muscle || ''}</div>
+                <div style="font-size:0.7rem;color:var(--text-muted);">${ex.sets}x ${ex.reps}</div>
+              </div>
+              <div style="display:flex;gap:6px;">
+                <button class="builder-action-btn swap" onclick="swapBuilderExerciseFromDay(${i})">🔄</button>
+                <button class="builder-action-btn delete" onclick="removeBuilderExerciseFromDay(${i})">✕</button>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      ` : `
+        <div style="text-align:center;padding:40px 20px;color:var(--text-muted);">
+          <div style="font-size:3rem;margin-bottom:12px;opacity:0.4;">🏋️</div>
+          <div style="font-size:1rem;font-weight:600;margin-bottom:4px;">Nenhum exercício</div>
+          <div style="font-size:0.85rem;">Adicione exercícios para este dia</div>
+        </div>
+      `}
+      <button class="builder-add-btn" onclick="openBuilderExercisePicker()" style="margin-top:16px;">+ Adicionar Exercício</button>
+    </div>
+  `;
+}
+
+function openBuilderExercisePicker() {
+  pickerMode = true;
+  pickerOrigin = 'builder';
+  librarySearchQuery = '';
+  libraryActiveFilter = 'Todos';
+  libraryDisplayCount = 30;
+  renderLibrary();
+}
+
+function addBuilderExerciseFromPicker(exerciseId) {
+  const db = getExercisesDB();
+  const ex = db.find(e => e.id === exerciseId);
+  if (!ex || !builderTargetUser || !builderSelectedDay) return;
+
+  const gender = builderTargetUser.gender || 'mulher';
+  if (!customWorkouts[gender]) customWorkouts[gender] = [];
+
+  let dayWorkout = customWorkouts[gender].find(d => d.dayIndex === builderSelectedDay.dayIndex);
+  if (!dayWorkout) {
+    dayWorkout = {
+      id: `cw_${builderTargetUserId}_${builderSelectedDay.dayIndex}`,
+      day: builderSelectedDay.dayName,
+      dayIndex: builderSelectedDay.dayIndex,
+      title: builderSelectedDay.dayName,
+      restDay: false,
+      exercises: []
+    };
+    customWorkouts[gender].push(dayWorkout);
+  }
+
+  dayWorkout.exercises.push({
+    id: `custom_${Date.now()}`,
+    name: ex.name,
+    sets: 3,
+    reps: '10',
+    image: `${ex.gif}.gif`,
+    muscle: ex.muscle,
+    tips: ''
+  });
+
+  saveCustomWorkouts(customWorkouts);
+  pickerMode = false;
+  renderBuilderDayExercises();
+}
+
+function removeBuilderExerciseFromDay(index) {
+  const gender = builderTargetUser.gender || 'mulher';
+  const customDays = customWorkouts[gender] || [];
+  const dayWorkout = customDays.find(d => d.dayIndex === builderSelectedDay.dayIndex);
+  if (!dayWorkout) return;
+
+  const exName = dayWorkout.exercises[index]?.name || 'este exercício';
+  if (!confirm(`Remover "${exName}"?`)) return;
+
+  dayWorkout.exercises.splice(index, 1);
+
+  if (dayWorkout.exercises.length === 0) {
+    customWorkouts[gender] = customDays.filter(d => d.dayIndex !== builderSelectedDay.dayIndex);
+  }
+
+  saveCustomWorkouts(customWorkouts);
+  renderBuilderDayExercises();
+}
+
+function swapBuilderExerciseFromDay(index) {
+  swappingExerciseIdx = index;
+  addingToWorkout = false;
+  pickerMode = true;
+  pickerOrigin = 'builder';
+  librarySearchQuery = '';
+  libraryActiveFilter = 'Todos';
+  libraryDisplayCount = 30;
+  renderLibrary();
 }
 
 function startNewWorkout() {
@@ -1599,45 +1706,17 @@ function startNewWorkout() {
   renderBuilder();
 }
 
-function setBuilderDay(day) {
-  builderDay = day;
-  renderBuilder();
-}
-
-function setBuilderGender(gender) {
-  builderGender = gender;
-  renderBuilder();
-}
-
-function openExercisePicker() {
-  pickerMode = true;
-  if (adminScheduleUserId !== null) {
-    pickerOrigin = 'adminSchedule';
-  } else {
-    pickerOrigin = (addingToWorkout || swappingExerciseIdx >= 0) ? 'workout' : 'builder';
-  }
-  pickerCallback = null;
-  librarySearchQuery = '';
-  libraryActiveFilter = 'Todos';
-  libraryDisplayCount = 30;
-  renderLibrary();
-}
-
 function closePicker() {
   pickerMode = false;
   pickerCallback = null;
   addingToWorkout = false;
   swappingExerciseIdx = -1;
-  if (pickerOrigin === 'adminSchedule') {
-    adminScheduleUserId = null;
-    adminScheduleDayNum = null;
-    pickerOrigin = 'builder';
-    renderAdmin();
-    return;
-  }
   if (pickerOrigin === 'workout' && currentWorkout) {
     currentView = 'workout';
     renderWorkout();
+  } else if (pickerOrigin === 'builder' && builderTargetUser && builderSelectedDay) {
+    currentView = 'builder';
+    renderBuilderDayExercises();
   } else if (currentView === 'builder' || pickerOrigin === 'builder') {
     currentView = 'builder';
     renderBuilder();
@@ -1653,8 +1732,21 @@ function addExerciseFromPicker(exerciseId) {
   const ex = db.find(e => e.id === exerciseId);
   if (!ex) return;
 
-  if (pickerOrigin === 'adminSchedule') {
-    saveAdminScheduleExercise(exerciseId);
+  if (swappingExerciseIdx >= 0 && builderTargetUser && builderSelectedDay) {
+    const gender = builderTargetUser.gender || 'mulher';
+    const customDays = customWorkouts[gender] || [];
+    const dayWorkout = customDays.find(d => d.dayIndex === builderSelectedDay.dayIndex);
+    if (dayWorkout && dayWorkout.exercises[swappingExerciseIdx]) {
+      dayWorkout.exercises[swappingExerciseIdx] = {
+        ...dayWorkout.exercises[swappingExerciseIdx],
+        name: ex.name,
+        image: `${ex.gif}.gif`,
+        muscle: ex.muscle
+      };
+      saveCustomWorkouts(customWorkouts);
+    }
+    swappingExerciseIdx = -1;
+    closePicker();
     return;
   }
 
@@ -1676,6 +1768,11 @@ function addExerciseFromPicker(exerciseId) {
 
   if (addingToWorkout && currentWorkout) {
     addExerciseToCurrentWorkout(exerciseId);
+    return;
+  }
+
+  if (builderTargetUser && builderSelectedDay) {
+    addBuilderExerciseFromPicker(exerciseId);
     return;
   }
 
@@ -2085,39 +2182,7 @@ function loadUserSchedule() {
 
   container.innerHTML = WEEK_DAYS_DISPLAY.map((day, idx) => {
     const dayNum = (idx + 1) % 7;
-    const dayData = userSchedule[String(dayNum)];
-    const active = dayData === undefined ? true : (dayData.active !== false);
-    const exercises = (dayData && dayData.exercises) || [];
-    const title = (dayData && dayData.title) || '';
-    const hasCustom = exercises.length > 0;
-
-    let exercisesHtml = '';
-    if (active) {
-      exercisesHtml = `
-        <div class="schedule-day-exercises">
-          ${hasCustom ? `
-            <input class="schedule-day-title-input" type="text" value="${title}" placeholder="Nome do treino" onchange="updateAdminDayTitle(${uid}, ${dayNum}, this.value)">
-            ${exercises.map((ex, i) => `
-              <div class="schedule-exercise-item">
-                <img class="schedule-ex-gif" src="https://cdnh.sistemasca.com/arquivos/exercicios/${ex.id}.gif" alt="${ex.name}" onerror="this.style.display='none'">
-                <div class="schedule-ex-info">
-                  <div class="schedule-ex-name">${ex.name}</div>
-                  <div class="schedule-ex-detail">${ex.sets}x ${ex.reps} — ${ex.muscle || ''}</div>
-                </div>
-                <button class="schedule-ex-remove" onclick="removeAdminScheduleExercise(${uid}, ${dayNum}, ${i})">✕</button>
-              </div>
-            `).join('')}
-            <button class="schedule-add-btn" onclick="openAdminSchedulePicker(${uid}, ${dayNum})">+ Adicionar</button>
-          ` : `
-            <div class="schedule-empty-day">
-              <span>Usa treino padrão</span>
-              <button class="schedule-add-btn" onclick="openAdminSchedulePicker(${uid}, ${dayNum})">✏️ Criar Treino</button>
-            </div>
-          `}
-        </div>
-      `;
-    }
-
+    const active = userSchedule[String(dayNum)] !== false;
     return `
       <div class="schedule-day-row">
         <span class="schedule-day-name">${day}</span>
@@ -2126,7 +2191,6 @@ function loadUserSchedule() {
           <span class="schedule-slider"></span>
         </label>
       </div>
-      ${exercisesHtml}
     `;
   }).join('');
 }
@@ -2134,63 +2198,7 @@ function loadUserSchedule() {
 function toggleScheduleDay(uid, dayNum, active) {
   if (!remoteConfig.weeklySchedule) remoteConfig.weeklySchedule = {};
   if (!remoteConfig.weeklySchedule[String(uid)]) remoteConfig.weeklySchedule[String(uid)] = {};
-  if (!remoteConfig.weeklySchedule[String(uid)][String(dayNum)]) {
-    remoteConfig.weeklySchedule[String(uid)][String(dayNum)] = { active: true, exercises: [] };
-  }
-  remoteConfig.weeklySchedule[String(uid)][String(dayNum)].active = active;
-  saveRemoteConfig();
-  loadUserSchedule();
-}
-
-function openAdminSchedulePicker(uid, dayNum) {
-  adminScheduleUserId = uid;
-  adminScheduleDayNum = dayNum;
-  openExercisePicker();
-}
-
-function saveAdminScheduleExercise(exerciseId) {
-  const db = getExercisesDB();
-  const ex = db.find(e => e.id === exerciseId);
-  if (!ex || !adminScheduleUserId) return;
-
-  if (!remoteConfig.weeklySchedule) remoteConfig.weeklySchedule = {};
-  if (!remoteConfig.weeklySchedule[String(adminScheduleUserId)]) remoteConfig.weeklySchedule[String(adminScheduleUserId)] = {};
-  const dayKey = String(adminScheduleDayNum);
-  if (!remoteConfig.weeklySchedule[String(adminScheduleUserId)][dayKey]) {
-    remoteConfig.weeklySchedule[String(adminScheduleUserId)][dayKey] = { active: true, title: '', exercises: [] };
-  }
-  const dayData = remoteConfig.weeklySchedule[String(adminScheduleUserId)][dayKey];
-  if (!dayData.exercises) dayData.exercises = [];
-
-  dayData.exercises.push({
-    id: `custom_${Date.now()}`,
-    name: ex.name,
-    sets: 3,
-    reps: '8-12',
-    image: `${ex.gif}.gif`,
-    muscle: ex.muscle,
-    tips: ''
-  });
-  saveRemoteConfig();
-}
-
-function removeAdminScheduleExercise(uid, dayNum, idx) {
-  if (!remoteConfig.weeklySchedule) return;
-  const dayData = remoteConfig.weeklySchedule[String(uid)]?.[String(dayNum)];
-  if (!dayData || !dayData.exercises) return;
-  dayData.exercises.splice(idx, 1);
-  if (dayData.exercises.length === 0 && !dayData.title) {
-    delete remoteConfig.weeklySchedule[String(uid)][String(dayNum)];
-  }
-  saveRemoteConfig();
-  loadUserSchedule();
-}
-
-function updateAdminDayTitle(uid, dayNum, value) {
-  if (!remoteConfig.weeklySchedule) return;
-  const dayData = remoteConfig.weeklySchedule[String(uid)]?.[String(dayNum)];
-  if (!dayData) return;
-  dayData.title = value;
+  remoteConfig.weeklySchedule[String(uid)][String(dayNum)] = active;
   saveRemoteConfig();
 }
 
