@@ -4,9 +4,9 @@ const { authMiddleware, adminMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    const workouts = readWorkouts();
+    const workouts = await readWorkouts();
     res.json(workouts);
   } catch (err) {
     console.error('Error reading workouts:', err);
@@ -14,14 +14,14 @@ router.get('/', (req, res) => {
   }
 });
 
-router.put('/', authMiddleware, adminMiddleware, (req, res) => {
+router.put('/', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const workouts = req.body;
     if (!workouts.homem || !workouts.mulher) {
       return res.status(400).json({ error: 'Dados inválidos. Expects {homme: [...], mulher: [...]}' });
     }
 
-    const success = writeWorkouts(workouts);
+    const success = await writeWorkouts(workouts);
     if (success) {
       res.json({ message: 'Treinos atualizados com sucesso' });
     } else {

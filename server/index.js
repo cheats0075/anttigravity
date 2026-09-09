@@ -7,6 +7,7 @@ const workoutRoutes = require('./routes/workouts');
 const userWorkoutRoutes = require('./routes/user-workouts');
 const userRoutes = require('./routes/users');
 const historyRoutes = require('./routes/history');
+const { initDB, readConfig, writeConfig } = require('./data/store');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -24,12 +25,11 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-app.get('/api/config', (req, res) => {
+app.get('/api/config', async (req, res) => {
   try {
-    const { readConfig } = require('./data/store');
-    const config = readConfig();
+    const config = await readConfig();
     const safeConfig = {
-      users: config.users.map(u => ({
+      users: (config.users || []).map(u => ({
         id: u.id,
         name: u.name,
         isAdmin: u.isAdmin,
@@ -45,11 +45,8 @@ app.get('/api/config', (req, res) => {
   }
 });
 
-app.put('/api/config', (req, res) => {
+app.put('/api/config', async (req, res) => {
   try {
-    const { readConfig, writeConfig } = require('./data/store');
-    const { authMiddleware } = require('./middleware/auth');
-
     const token = req.headers.authorization?.replace('Bearer ', '');
     if (!token) return res.status(401).json({ error: 'Token não fornecido' });
 
@@ -59,7 +56,7 @@ app.put('/api/config', (req, res) => {
     if (!decoded.isAdmin) return res.status(403).json({ error: 'Apenas admin' });
 
     const incoming = req.body;
-    const config = readConfig();
+    const config = await readConfig();
 
     if (incoming.exerciseEdits) {
       config.exerciseEdits = incoming.exerciseEdits;
@@ -68,7 +65,7 @@ app.put('/api/config', (req, res) => {
       config.weeklySchedule = incoming.weeklySchedule;
     }
 
-    writeConfig(config);
+    await writeConfig(config);
     res.json({ message: 'Configuração salva com sucesso' });
   } catch (err) {
     console.error('Error saving config:', err);
@@ -82,6 +79,13 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'index.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+initDB().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}${process.env.DATABASE_URL ? ' (PostgreSQL)' : ' (file-based)'}`);
+  });
+}).catch(err => {
+  console.error('Failed to init DB, falling back to file-based:', err.message);
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT} (file-based fallback)`);
+  });
 });
