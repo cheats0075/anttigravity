@@ -52,6 +52,7 @@ let builderMultiMode = false;
 let customWorkouts = {};
 let userWorkouts = {};
 
+let apiLoaded = false;
 let currentUserId = null;
 let currentUserIsAdmin = false;
 let currentUserName = '';
@@ -177,17 +178,13 @@ async function loadRemoteConfig() {
     remoteConfig = config;
     return;
   }
-
-  try {
-    const r = await fetch('config.json?' + Date.now());
-    if (r.ok) remoteConfig = await r.json();
-  } catch (e) {}
 }
 
 function saveRemoteConfig() {}
 
 async function saveAllConfig() {
   if (!authToken || !currentUserIsAdmin) { alert('Apenas admin pode salvar.'); return; }
+  if (!apiLoaded) { alert('Aguarde o servidor conectar antes de salvar.'); return; }
 
   const btn = document.getElementById('admin-save-btn');
   if (btn) { btn.textContent = 'Salvando...'; btn.disabled = true; }
@@ -283,6 +280,7 @@ async function handleLogin(e) {
     loadRemoteConfig().then(async () => {
       await loadWorkouts();
       await loadUserWorkouts(currentUserId);
+      apiLoaded = true;
       renderHome();
     });
   } else {
@@ -2668,9 +2666,13 @@ if (currentUserId && authToken) {
   loadWorkouts().then(async () => {
     await loadRemoteConfig();
     await loadUserWorkouts(currentUserId);
+    apiLoaded = true;
     renderHome();
   });
 } else {
   renderLogin();
-  loadWorkouts().then(() => loadRemoteConfig());
+  loadWorkouts().then(async () => {
+    await loadRemoteConfig();
+    apiLoaded = true;
+  });
 }
