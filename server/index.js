@@ -4,6 +4,7 @@ const path = require('path');
 
 const authRoutes = require('./routes/auth');
 const workoutRoutes = require('./routes/workouts');
+const userWorkoutRoutes = require('./routes/user-workouts');
 const userRoutes = require('./routes/users');
 const historyRoutes = require('./routes/history');
 
@@ -15,6 +16,7 @@ app.use(express.json());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/workouts', workoutRoutes);
+app.use('/api/user-workouts', userWorkoutRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/history', historyRoutes);
 

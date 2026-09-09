@@ -50,4 +50,12 @@ function writeHistory(history) {
   return writeJSON('history.json', history);
 }
 
-module.exports = { readJSON, writeJSON, readConfig, writeConfig, readWorkouts, writeWorkouts, readHistory, writeHistory };
+function readUserWorkouts() {
+  return readJSON('user-workouts.json') || {};
+}
+
+function writeUserWorkouts(data) {
+  return writeJSON('user-workouts.json', data);
+}
+
+module.exports = { readJSON, writeJSON, readConfig, writeConfig, readWorkouts, writeWorkouts, readHistory, writeHistory, readUserWorkouts, writeUserWorkouts };
