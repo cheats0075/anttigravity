@@ -2299,7 +2299,7 @@ function filterAdminExercises() {
     ).join('');
     return `
       <div class="admin-ex-row">
-        <img class="admin-ex-gif" src="https://cdnh.sistemasca.com/arquivos/exercicios/${ex.id}.gif" alt="${displayName}" onerror="this.style.display='none'">
+        <img class="admin-ex-gif" src="gifs/${ex.gif || ex.id}.gif" alt="${displayName}" onerror="this.style.display='none'">
         <div class="admin-ex-info">
           <input class="admin-ex-name-input" type="text" value="${displayName}" onchange="updateExerciseName(${ex.id}, this.value)">
           <div class="admin-ex-id">#${ex.id}</div>
