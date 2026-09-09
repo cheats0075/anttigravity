@@ -3,6 +3,12 @@ const WEEK_DAYS = ['segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado', 
 const WEEK_DAYS_DISPLAY = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
 const MUSCLE_FILTERS = ['Todos', 'Peito', 'Costas', 'Perna', 'Ombro', 'Bíceps', 'Tríceps', 'Abdome', 'Glúteo', 'Corpo', 'Aeróbico', 'Alongamento', 'CrossFit', 'Funcional', 'Mobilidade'];
 
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:3000/api'
+  : 'https://anttigravity-api.onrender.com/api';
+
+let authToken = localStorage.getItem('auth_token') || null;
+
 const app = document.getElementById('app');
 let workouts = {};
 let currentGender = null;
@@ -76,6 +82,70 @@ function tryLoadLib() {
 }
 tryLoadLib();
 
+function apiHeaders() {
+  const headers = { 'Content-Type': 'application/json' };
+  if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+  return headers;
+}
+
+async function apiGet(endpoint) {
+  try {
+    const r = await fetch(`${API_BASE}${endpoint}`, { headers: apiHeaders() });
+    if (r.ok) return await r.json();
+    return null;
+  } catch (e) {
+    console.warn('API GET error:', e);
+    return null;
+  }
+}
+
+async function apiPost(endpoint, data) {
+  try {
+    const r = await fetch(`${API_BASE}${endpoint}`, {
+      method: 'POST',
+      headers: apiHeaders(),
+      body: JSON.stringify(data)
+    });
+    if (r.ok) return await r.json();
+    const err = await r.json().catch(() => ({}));
+    return { error: err.error || 'Erro na requisição' };
+  } catch (e) {
+    console.warn('API POST error:', e);
+    return { error: 'Erro de conexão' };
+  }
+}
+
+async function apiPut(endpoint, data) {
+  try {
+    const r = await fetch(`${API_BASE}${endpoint}`, {
+      method: 'PUT',
+      headers: apiHeaders(),
+      body: JSON.stringify(data)
+    });
+    if (r.ok) return await r.json();
+    const err = await r.json().catch(() => ({}));
+    return { error: err.error || 'Erro na requisição' };
+  } catch (e) {
+    console.warn('API PUT error:', e);
+    return { error: 'Erro de conexão' };
+  }
+}
+
+async function apiDelete(endpoint) {
+  try {
+    const r = await fetch(`${API_BASE}${endpoint}`, {
+      method: 'DELETE',
+      headers: apiHeaders()
+    });
+    if (r.ok) return await r.json();
+    const err = await r.json().catch(() => ({}));
+    return { error: err.error || 'Erro na requisição' };
+  } catch (e) {
+    console.warn('API DELETE error:', e);
+    return { error: 'Erro de conexão' };
+  }
+}
+
 function storageKey(key) {
   return currentUserId ? `${currentUserId}_${key}` : key;
 }
@@ -108,17 +178,33 @@ function saveRemoteConfig() {
   try { localStorage.setItem('remote_config_backup', JSON.stringify(remoteConfig)); } catch (e) {}
 }
 
-function doLogin(userId, password) {
+async function doLogin(userId, password) {
   const uid = parseInt(userId, 10);
   const pwd = String(password);
-  const user = remoteConfig.users.find(u => u.id === uid && u.password === pwd);
-  if (!user) return false;
-  currentUserId = user.id;
-  currentUserIsAdmin = !!user.isAdmin;
-  currentUserName = user.name;
-  currentGender = user.gender || null;
-  try { localStorage.setItem('current_session', JSON.stringify({ id: user.id, name: user.name, isAdmin: user.isAdmin, gender: user.gender || null })); } catch (e) {}
-  return true;
+
+  try {
+    const result = await apiPost('/auth/login', { id: uid, password: pwd });
+    if (result.error) return false;
+
+    authToken = result.token;
+    localStorage.setItem('auth_token', authToken);
+    currentUserId = result.user.id;
+    currentUserIsAdmin = result.user.isAdmin;
+    currentUserName = result.user.name;
+    currentGender = result.user.gender || null;
+    try { localStorage.setItem('current_session', JSON.stringify(result.user)); } catch (e) {}
+    return true;
+  } catch (e) {
+    console.warn('API login failed, trying local:', e);
+    const user = remoteConfig.users.find(u => u.id === uid && u.password === pwd);
+    if (!user) return false;
+    currentUserId = user.id;
+    currentUserIsAdmin = !!user.isAdmin;
+    currentUserName = user.name;
+    currentGender = user.gender || null;
+    try { localStorage.setItem('current_session', JSON.stringify(user)); } catch (e2) {}
+    return true;
+  }
 }
 
 function doLogout() {
@@ -127,13 +213,18 @@ function doLogout() {
   currentUserName = '';
   currentGender = null;
   currentWorkout = null;
-  try { localStorage.removeItem('current_session'); } catch (e) {}
+  authToken = null;
+  try {
+    localStorage.removeItem('current_session');
+    localStorage.removeItem('auth_token');
+  } catch (e) {}
   renderLogin();
 }
 
 function checkSession() {
   try {
     const raw = localStorage.getItem('current_session');
+    const token = localStorage.getItem('auth_token');
     if (!raw) return false;
     const s = JSON.parse(raw);
     const user = remoteConfig.users.find(u => u.id === s.id);
@@ -142,6 +233,7 @@ function checkSession() {
     currentUserIsAdmin = !!user.isAdmin;
     currentUserName = user.name;
     currentGender = user.gender || null;
+    if (token) authToken = token;
     return true;
   } catch (e) { return false; }
 }
@@ -162,11 +254,11 @@ function renderLogin() {
   `;
 }
 
-function handleLogin(e) {
+async function handleLogin(e) {
   e.preventDefault();
   const userId = document.getElementById('login-user').value;
   const pass = document.getElementById('login-pass').value;
-  if (doLogin(userId, pass)) {
+  if (await doLogin(userId, pass)) {
     loadWorkouts().then(() => {
       loadRestTime();
       history.replaceState({ view: 'home' }, '', '#/');
@@ -215,6 +307,16 @@ function saveRestTime(time) {
 
 async function loadWorkouts() {
   try {
+    const apiWorkouts = await apiGet('/workouts');
+    if (apiWorkouts && apiWorkouts.homem && apiWorkouts.mulher) {
+      workouts = apiWorkouts;
+      return;
+    }
+  } catch (e) {
+    console.warn('API workouts load failed:', e);
+  }
+
+  try {
     const resp = await fetch('shared/workouts.json');
     workouts = await resp.json();
   } catch (e) {
@@ -244,14 +346,39 @@ function saveExerciseStates(gender, workoutId, states) {
   try { sSet(`exercises_${gender}_${workoutId}`, JSON.stringify(states)); } catch (e) {}
 }
 
-function loadHistory() {
+async function loadHistory() {
+  try {
+    if (authToken && currentUserId) {
+      const apiHistory = await apiGet(`/history/${currentUserId}`);
+      if (apiHistory && Array.isArray(apiHistory)) return apiHistory;
+    }
+  } catch (e) {
+    console.warn('API history load failed:', e);
+  }
+
   try {
     const saved = sGet('workout_history');
     return saved ? JSON.parse(saved) : [];
   } catch (e) { return []; }
 }
 
-function saveHistory(history) {
+async function saveHistory(history) {
+  try {
+    if (authToken && currentUserId) {
+      const lastEntry = history[history.length - 1];
+      if (lastEntry) {
+        await apiPost('/history', {
+          userId: currentUserId,
+          workout: lastEntry.workout,
+          date: lastEntry.date,
+          exercises: lastEntry.exercises
+        });
+      }
+    }
+  } catch (e) {
+    console.warn('API history save failed:', e);
+  }
+
   try { sSet('workout_history', JSON.stringify(history)); } catch (e) {}
 }
 
@@ -262,7 +389,19 @@ function loadCustomWorkouts() {
   } catch (e) { return {}; }
 }
 
-function saveCustomWorkouts(data) {
+async function saveCustomWorkouts(data) {
+  try {
+    if (authToken && currentUserIsAdmin) {
+      const apiWorkouts = await apiGet('/workouts');
+      if (apiWorkouts) {
+        const merged = { ...apiWorkouts, ...data };
+        await apiPut('/workouts', merged);
+      }
+    }
+  } catch (e) {
+    console.warn('API custom workouts save failed:', e);
+  }
+
   try { sSet('custom_workouts', JSON.stringify(data)); } catch (e) {}
   customWorkouts = data;
 }
@@ -2124,13 +2263,19 @@ function updateExerciseMuscle(exId, newMuscle) {
   saveRemoteConfig();
 }
 
-function createUser() {
+async function createUser() {
   const id = parseInt(document.getElementById('new-user-id')?.value, 10);
   const pass = document.getElementById('new-user-pass')?.value?.trim();
   const name = document.getElementById('new-user-name')?.value?.trim();
   const gender = document.getElementById('new-user-gender')?.value || 'mulher';
   if (!id || !pass || !name) { alert('Preencha ID, senha e nome.'); return; }
   if (remoteConfig.users.find(u => u.id === id)) { alert('Já existe um usuário com esse Login.'); return; }
+
+  if (authToken) {
+    const result = await apiPost('/users', { id, name, password: pass, gender, isAdmin: false });
+    if (result.error) { alert('Erro ao criar usuário: ' + result.error); return; }
+  }
+
   remoteConfig.users.push({ id, password: pass, name, isAdmin: false, gender });
   saveRemoteConfig();
   alert(`Usuário ${name} (#${id}) criado!`);
@@ -2140,8 +2285,14 @@ function createUser() {
   renderAdmin();
 }
 
-function removeUser(userId) {
+async function removeUser(userId) {
   if (!confirm(`Remover usuário #${userId}?`)) return;
+
+  if (authToken) {
+    const result = await apiDelete(`/users/${userId}`);
+    if (result.error) { alert('Erro ao remover usuário: ' + result.error); return; }
+  }
+
   remoteConfig.users = remoteConfig.users.filter(u => u.id !== userId);
   saveRemoteConfig();
   renderAdmin();
