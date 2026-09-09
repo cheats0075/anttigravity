@@ -89,9 +89,15 @@ function apiHeaders() {
   return headers;
 }
 
+function apiFetch(url, options = {}) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 60000);
+  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timeout));
+}
+
 async function apiGet(endpoint) {
   try {
-    const r = await fetch(`${API_BASE}${endpoint}`, { headers: apiHeaders() });
+    const r = await apiFetch(`${API_BASE}${endpoint}`, { headers: apiHeaders() });
     if (r.ok) return await r.json();
     return null;
   } catch (e) {
@@ -102,7 +108,7 @@ async function apiGet(endpoint) {
 
 async function apiPost(endpoint, data) {
   try {
-    const r = await fetch(`${API_BASE}${endpoint}`, {
+    const r = await apiFetch(`${API_BASE}${endpoint}`, {
       method: 'POST',
       headers: apiHeaders(),
       body: JSON.stringify(data)
@@ -118,7 +124,7 @@ async function apiPost(endpoint, data) {
 
 async function apiPut(endpoint, data) {
   try {
-    const r = await fetch(`${API_BASE}${endpoint}`, {
+    const r = await apiFetch(`${API_BASE}${endpoint}`, {
       method: 'PUT',
       headers: apiHeaders(),
       body: JSON.stringify(data)
@@ -134,7 +140,7 @@ async function apiPut(endpoint, data) {
 
 async function apiDelete(endpoint) {
   try {
-    const r = await fetch(`${API_BASE}${endpoint}`, {
+    const r = await apiFetch(`${API_BASE}${endpoint}`, {
       method: 'DELETE',
       headers: apiHeaders()
     });
@@ -164,65 +170,35 @@ function sRemove(key) {
 }
 
 async function loadRemoteConfig() {
+  const config = await apiGet('/config');
+  if (config) {
+    remoteConfig = config;
+    return;
+  }
+
   try {
     const r = await fetch('config.json?' + Date.now());
     if (r.ok) remoteConfig = await r.json();
-  } catch (e) {
-    try {
-      const saved = localStorage.getItem('remote_config_backup');
-      if (saved) remoteConfig = JSON.parse(saved);
-    } catch (e2) {}
-  }
-
-  if (authToken && currentUserIsAdmin) {
-    try {
-      const users = await apiGet('/users');
-      if (users && Array.isArray(users)) {
-        remoteConfig.users = remoteConfig.users.filter(u => {
-          const apiUser = users.find(au => au.id === u.id);
-          return apiUser ? false : true;
-        });
-        users.forEach(au => {
-          if (!remoteConfig.users.find(u => u.id === au.id)) {
-            remoteConfig.users.push({ id: au.id, name: au.name, isAdmin: au.isAdmin, gender: au.gender, password: '' });
-          }
-        });
-      }
-    } catch (e) {}
-  }
+  } catch (e) {}
 }
 
-function saveRemoteConfig() {
-  try { localStorage.setItem('remote_config_backup', JSON.stringify(remoteConfig)); } catch (e) {}
-}
+function saveRemoteConfig() {}
 
 async function doLogin(userId, password) {
   const uid = parseInt(userId, 10);
   const pwd = String(password);
 
-  try {
-    const result = await apiPost('/auth/login', { id: uid, password: pwd });
-    if (result.error) return false;
+  const result = await apiPost('/auth/login', { id: uid, password: pwd });
+  if (result.error) return false;
 
-    authToken = result.token;
-    localStorage.setItem('auth_token', authToken);
-    currentUserId = result.user.id;
-    currentUserIsAdmin = result.user.isAdmin;
-    currentUserName = result.user.name;
-    currentGender = result.user.gender || null;
-    try { localStorage.setItem('current_session', JSON.stringify(result.user)); } catch (e) {}
-    return true;
-  } catch (e) {
-    console.warn('API login failed, trying local:', e);
-    const user = remoteConfig.users.find(u => u.id === uid && u.password === pwd);
-    if (!user) return false;
-    currentUserId = user.id;
-    currentUserIsAdmin = !!user.isAdmin;
-    currentUserName = user.name;
-    currentGender = user.gender || null;
-    try { localStorage.setItem('current_session', JSON.stringify(user)); } catch (e2) {}
-    return true;
-  }
+  authToken = result.token;
+  localStorage.setItem('auth_token', authToken);
+  currentUserId = result.user.id;
+  currentUserIsAdmin = result.user.isAdmin;
+  currentUserName = result.user.name;
+  currentGender = result.user.gender || null;
+  try { localStorage.setItem('current_session', JSON.stringify(result.user)); } catch (e) {}
+  return true;
 }
 
 function doLogout() {
@@ -274,6 +250,11 @@ async function handleLogin(e) {
   e.preventDefault();
   const userId = document.getElementById('login-user').value;
   const pass = document.getElementById('login-pass').value;
+  const btn = document.querySelector('.login-btn');
+  if (btn) { btn.textContent = 'Entrando...'; btn.disabled = true; }
+  const errorEl = document.getElementById('login-error');
+  if (errorEl) errorEl.style.display = 'none';
+
   if (await doLogin(userId, pass)) {
     await loadRemoteConfig();
     await loadWorkouts();
@@ -282,7 +263,8 @@ async function handleLogin(e) {
     history.replaceState({ view: 'home' }, '', '#/');
     renderHome();
   } else {
-    document.getElementById('login-error').style.display = 'block';
+    if (btn) { btn.textContent = 'Entrar'; btn.disabled = false; }
+    if (errorEl) errorEl.style.display = 'block';
   }
 }
 
@@ -323,22 +305,12 @@ function saveRestTime(time) {
 }
 
 async function loadWorkouts() {
-  try {
-    const apiWorkouts = await apiGet('/workouts');
-    if (apiWorkouts && apiWorkouts.homem && apiWorkouts.mulher) {
-      workouts = apiWorkouts;
-      return;
-    }
-  } catch (e) {
-    console.warn('API workouts load failed:', e);
+  const apiWorkouts = await apiGet('/workouts');
+  if (apiWorkouts && apiWorkouts.homem && apiWorkouts.mulher) {
+    workouts = apiWorkouts;
+    return;
   }
-
-  try {
-    const resp = await fetch('shared/workouts.json');
-    workouts = await resp.json();
-  } catch (e) {
-    console.warn('Erro ao carregar treinos:', e);
-  }
+  console.error('Não foi possível carregar treinos da API');
 }
 
 async function loadUserWorkouts(userId) {
@@ -347,14 +319,10 @@ async function loadUserWorkouts(userId) {
     return;
   }
 
-  try {
-    const data = await apiGet(`/user-workouts/${userId}`);
-    if (data && Array.isArray(data)) {
-      userWorkouts[userId] = data;
-      return;
-    }
-  } catch (e) {
-    console.warn('API user workouts load failed:', e);
+  const data = await apiGet(`/user-workouts/${userId}`);
+  if (data && Array.isArray(data)) {
+    userWorkouts[userId] = data;
+    return;
   }
 
   userWorkouts = {};
@@ -400,39 +368,25 @@ function saveExerciseStates(gender, workoutId, states) {
 }
 
 async function loadHistory() {
-  try {
-    if (authToken && currentUserId) {
-      const apiHistory = await apiGet(`/history/${currentUserId}`);
-      if (apiHistory && Array.isArray(apiHistory)) return apiHistory;
-    }
-  } catch (e) {
-    console.warn('API history load failed:', e);
+  if (authToken && currentUserId) {
+    const apiHistory = await apiGet(`/history/${currentUserId}`);
+    if (apiHistory && Array.isArray(apiHistory)) return apiHistory;
   }
-
-  try {
-    const saved = sGet('workout_history');
-    return saved ? JSON.parse(saved) : [];
-  } catch (e) { return []; }
+  return [];
 }
 
 async function saveHistory(history) {
-  try {
-    if (authToken && currentUserId) {
-      const lastEntry = history[history.length - 1];
-      if (lastEntry) {
-        await apiPost('/history', {
-          userId: currentUserId,
-          workout: lastEntry.workout,
-          date: lastEntry.date,
-          exercises: lastEntry.exercises
-        });
-      }
+  if (authToken && currentUserId) {
+    const lastEntry = history[history.length - 1];
+    if (lastEntry) {
+      await apiPost('/history', {
+        userId: currentUserId,
+        workout: lastEntry.workout,
+        date: lastEntry.date,
+        exercises: lastEntry.exercises
+      });
     }
-  } catch (e) {
-    console.warn('API history save failed:', e);
   }
-
-  try { sSet('workout_history', JSON.stringify(history)); } catch (e) {}
 }
 
 function loadCustomWorkouts() {
@@ -443,19 +397,13 @@ function loadCustomWorkouts() {
 }
 
 async function saveCustomWorkouts(data) {
-  try {
-    if (authToken && currentUserIsAdmin) {
-      const apiWorkouts = await apiGet('/workouts');
-      if (apiWorkouts) {
-        const merged = { ...apiWorkouts, ...data };
-        await apiPut('/workouts', merged);
-      }
+  if (authToken && currentUserIsAdmin) {
+    const apiWorkouts = await apiGet('/workouts');
+    if (apiWorkouts) {
+      const merged = { ...apiWorkouts, ...data };
+      await apiPut('/workouts', merged);
     }
-  } catch (e) {
-    console.warn('API custom workouts save failed:', e);
   }
-
-  try { sSet('custom_workouts', JSON.stringify(data)); } catch (e) {}
   customWorkouts = data;
 }
 
@@ -2532,6 +2480,27 @@ function initFromUrl() {
 }
 
 window.addEventListener('popstate', handlePopState);
+
+app.innerHTML = `
+  <div class="screen login-screen">
+    <div class="login-logo">ANTIGRAVITY</div>
+    <div class="login-subtitle" id="loading-text">Conectando ao servidor...</div>
+    <div style="margin-top:24px;display:flex;justify-content:center;">
+      <div class="csa-rest-circle" style="width:60px;height:60px;">
+        <svg viewBox="0 0 200 200" style="width:100%;height:100%;">
+          <circle class="csa-rest-track" cx="100" cy="100" r="90" fill="none" stroke="#333" stroke-width="6"/>
+          <circle cx="100" cy="100" r="90" fill="none" stroke="#00ff88" stroke-width="6"
+            stroke-dasharray="565" stroke-dashoffset="420"
+            style="animation: spin 2s linear infinite; transform-origin: center;"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+`;
+
+const style = document.createElement('style');
+style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+document.head.appendChild(style);
 
 loadWorkouts().then(async () => {
   checkSession();
