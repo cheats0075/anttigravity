@@ -4,56 +4,24 @@
       "id": 387,
       "password": "0075",
       "name": "Admin",
-      "isAdmin": true
+      "isAdmin": true,
+      "gender": null
     },
     {
       "id": 2,
       "password": "0716",
       "name": "0716",
-      "isAdmin": false
+      "isAdmin": false,
+      "gender": "mulher"
     },
     {
       "id": 3,
       "password": "1607",
       "name": "BRUNA",
-      "isAdmin": false
-    },
-    {
-      "id": 6,
-      "password": "1213",
-      "name": "Juliano",
-      "isAdmin": false
+      "isAdmin": false,
+      "gender": "mulher"
     }
   ],
-  "exerciseEdits": {
-    "100": {
-      "name": "abdominal"
-    },
-    "101": {
-      "name": "abdominal crunch"
-    },
-    "102": {
-      "name": "abdominal curl-up"
-    },
-    "103": {
-      "name": "abdominal sit-up"
-    },
-    "104": {
-      "name": "abdominal oblico"
-    },
-    "112": {
-      "muscle": "Antebraço"
-    },
-    "119": {
-      "muscle": "Bíceps"
-    },
-    "120": {
-      "muscle": "Bíceps"
-    }
-  },
-  "weeklySchedule": {
-    "5": {
-      "1": true
-    }
-  }
+  "exerciseEdits": {},
+  "weeklySchedule": {}
 }
