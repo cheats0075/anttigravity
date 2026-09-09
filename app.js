@@ -521,7 +521,7 @@ function renderHome() {
   if (!currentUserIsAdmin) {
     app.innerHTML = `
       ${renderTabBar()}
-      <div class="screen home">
+      <div class="screen home-user">
         <div class="user-home-topbar">
           <div class="user-home-name-top">${currentUserName}</div>
           <button class="user-header-logout" onclick="doLogout()">Sair</button>
