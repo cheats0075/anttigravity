@@ -2155,15 +2155,15 @@ body {
 }
 
 /* ===== USER HEADER BAR (Common User) ===== */
-.user-home-header {
+.user-home-topbar {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   width: 100%;
-  margin-bottom: 24px;
+  margin-bottom: 40px;
 }
 
-.user-header-name {
+.user-home-name-top {
   font-size: 1rem;
   font-weight: 700;
   color: var(--text-primary);
@@ -2183,14 +2183,6 @@ body {
 
 .user-header-logout:hover {
   background: rgba(239, 68, 68, 0.08);
-}
-
-.home-user-name {
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 32px;
-  animation: slideUp 0.6s ease 0.1s both;
 }
 
 @media (prefers-reduced-motion: reduce) {
