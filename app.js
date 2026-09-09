@@ -166,15 +166,8 @@ function handleLogin(e) {
   if (doLogin(userId, pass)) {
     loadWorkouts().then(() => {
       loadRestTime();
-      if (currentUserIsAdmin) {
-        history.replaceState({ view: 'home' }, '', '#/');
-        renderHome();
-      } else {
-        exerciseStates = {};
-        const genderParam = currentGender || 'homem';
-        history.replaceState({ view: 'dayList', gender: genderParam }, '', `#/${genderParam}`);
-        renderDayList();
-      }
+      history.replaceState({ view: 'home' }, '', '#/');
+      renderHome();
     });
   } else {
     document.getElementById('login-error').style.display = 'block';
@@ -525,9 +518,35 @@ function renderHome() {
   const todayWorkout = getTodayWorkout();
   const customDays = (currentGender && customWorkouts[currentGender]) || [];
 
-  let todayBtn = '';
+  if (!currentUserIsAdmin) {
+    let todayBtn = '';
+    if (todayWorkout) {
+      todayBtn = `
+        <button class="home-btn today-btn" onclick="selectGender('${currentGender}'); setTimeout(() => selectDay('${todayWorkout.id}'), 10)">
+          TREINO DE HOJE — ${todayWorkout.title}
+        </button>
+      `;
+    }
+
+    app.innerHTML = `
+      ${renderTabBar()}
+      <div class="screen home">
+        <div class="user-home-header">
+          <div></div>
+          <button class="user-header-logout" onclick="doLogout()">Sair</button>
+        </div>
+        <div class="home-title">ANTIGRAVITY</div>
+        <div class="home-user-name">${currentUserName}</div>
+        ${todayBtn}
+        <button class="home-btn today-btn" onclick="selectGender('${currentGender}')">INICIAR</button>
+      </div>
+    `;
+    return;
+  }
+
+  let adminTodayBtn = '';
   if (todayWorkout) {
-    todayBtn = `
+    adminTodayBtn = `
       <button class="home-btn today-btn" onclick="selectGender('${currentGender || 'homem'}'); setTimeout(() => selectDay('${todayWorkout.id}'), 10)">
         TREINO DE HOJE — ${todayWorkout.title}
       </button>
@@ -571,7 +590,7 @@ function renderHome() {
       <div class="home-title">ANTIGRAVITY</div>
       <div class="home-subtitle">Escolha seu treino</div>
       ${currentUserId ? `<div class="home-user-badge">${currentUserIsAdmin ? '👑' : '👤'} ${currentUserName} — Login: ${currentUserId} <span class="logout-link" onclick="doLogout()">sair</span></div>` : ''}
-      ${todayBtn}
+      ${adminTodayBtn}
       <button class="home-btn" onclick="selectGender('homem')">HOMEM</button>
       <button class="home-btn female" onclick="selectGender('mulher')">MULHER</button>
       ${statsHtml}
@@ -606,12 +625,6 @@ function renderDayList() {
         <div class="day-list-title">${currentGender === 'homem' ? 'HOMEM' : 'MULHER'}</div>
         ${currentUserIsAdmin ? `<button class="btn-history" onclick="showHistory()">Histórico</button>` : ''}
       </div>
-      ${!currentUserIsAdmin ? `
-        <div class="user-header-bar">
-          <span class="user-header-name">👤 ${currentUserName}</span>
-          <button class="user-header-logout" onclick="doLogout()">Sair</button>
-        </div>
-      ` : ''}
   `;
 
   WEEK_DAYS.forEach((dayKey, idx) => {
@@ -698,12 +711,8 @@ function goHome() {
   activeExercise = null;
   isResting = false;
   workoutStartTime = null;
-  if (currentUserIsAdmin) {
-    currentTab = 'home';
-    navigate('home');
-  } else {
-    history.back();
-  }
+  currentTab = 'home';
+  navigate('home');
 }
 
 function selectDay(dayId) {
@@ -2152,15 +2161,8 @@ loadWorkouts().then(async () => {
   await loadRemoteConfig();
   loadRestTime();
   if (checkSession()) {
-    if (currentUserIsAdmin) {
-      history.replaceState({ view: 'home' }, '', '#/');
-      initFromUrl();
-    } else {
-      const genderParam = currentGender || 'homem';
-      history.replaceState({ view: 'dayList', gender: genderParam }, '', `#/${genderParam}`);
-      exerciseStates = {};
-      renderDayList();
-    }
+    history.replaceState({ view: 'home' }, '', '#/');
+    renderHome();
   } else {
     renderLogin();
   }
