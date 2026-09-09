@@ -548,25 +548,14 @@ function renderHome() {
   const customDays = (currentGender && customWorkouts[currentGender]) || [];
 
   if (!currentUserIsAdmin) {
-    let todayBtn = '';
-    if (todayWorkout) {
-      todayBtn = `
-        <button class="home-btn today-btn" onclick="selectGender('${currentGender}'); setTimeout(() => selectDay('${todayWorkout.id}'), 10)">
-          TREINO DE HOJE — ${todayWorkout.title}
-        </button>
-      `;
-    }
-
     app.innerHTML = `
       ${renderTabBar()}
       <div class="screen home">
-        <div class="user-home-header">
-          <div></div>
+        <div class="user-home-topbar">
+          <div class="user-home-name-top">${currentUserName}</div>
           <button class="user-header-logout" onclick="doLogout()">Sair</button>
         </div>
         <div class="home-title">ANTIGRAVITY</div>
-        <div class="home-user-name">${currentUserName}</div>
-        ${todayBtn}
         <button class="home-btn today-btn" onclick="selectGender('${currentGender}')">INICIAR</button>
       </div>
     `;
