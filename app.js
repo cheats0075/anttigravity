@@ -275,22 +275,14 @@ async function handleLogin(e) {
   if (errorEl) errorEl.style.display = 'none';
 
   if (await doLogin(userId, pass)) {
-    if (currentUserIsAdmin) {
-      history.replaceState({ view: 'admin' }, '', '#/admin');
-      renderAdmin();
-      loadRemoteConfig().then(async () => {
-        apiLoaded = true;
-      });
-    } else {
-      history.replaceState({ view: 'home' }, '', '#/');
+    history.replaceState({ view: 'home' }, '', '#/');
+    renderHome();
+    loadRemoteConfig().then(async () => {
+      await loadWorkouts();
+      await loadUserWorkouts(currentUserId);
+      apiLoaded = true;
       renderHome();
-      loadRemoteConfig().then(async () => {
-        await loadWorkouts();
-        await loadUserWorkouts(currentUserId);
-        apiLoaded = true;
-        renderHome();
-      });
-    }
+    });
   } else {
     if (btn) { btn.textContent = 'Entrar'; btn.disabled = false; }
     if (errorEl) errorEl.style.display = 'block';
@@ -617,7 +609,26 @@ function renderView(view) {
 function renderTabBar() {
   if (currentView === 'activeExercise') return '';
   if (currentUserIsAdmin) {
-    return '';
+    return `
+      <div class="tab-bar">
+        <div class="tab-item ${currentTab === 'home' ? 'active' : ''}" onclick="switchTab('home')">
+          <div class="icon">🏠</div>
+          <span>Início</span>
+        </div>
+        <div class="tab-item ${currentTab === 'library' ? 'active' : ''}" onclick="switchTab('library')">
+          <div class="icon">📚</div>
+          <span>Biblioteca</span>
+        </div>
+        <div class="tab-item ${currentTab === 'builder' ? 'active' : ''}" onclick="switchTab('builder')">
+          <div class="icon">🔧</div>
+          <span>Criar</span>
+        </div>
+        <div class="tab-item ${currentTab === 'history' ? 'active' : ''}" onclick="switchTab('history')">
+          <div class="icon">📋</div>
+          <span>Histórico</span>
+        </div>
+      </div>
+    `;
   }
   return `
     <div class="tab-bar">
@@ -644,6 +655,16 @@ function switchTab(tab) {
     currentView = 'home';
     history.pushState({ view: 'home' }, '', '#/');
     renderHome();
+  } else if (tab === 'library') {
+    pickerMode = false;
+    pickerCallback = null;
+    currentView = 'library';
+    history.pushState({ view: 'library' }, '', '#/library');
+    renderLibrary();
+  } else if (tab === 'builder') {
+    currentView = 'builder';
+    history.pushState({ view: 'builder' }, '', '#/builder');
+    renderBuilder();
   } else if (tab === 'history') {
     currentView = 'history';
     if (!currentUserIsAdmin && currentGender) {
@@ -658,24 +679,85 @@ function switchTab(tab) {
 function renderHome() {
   currentTab = 'home';
   currentView = 'home';
+  const stats = getWeeklyStats();
+  const all = mergeWorkouts();
+  const todayWorkout = getTodayWorkout();
+  const customDays = (currentGender && customWorkouts[currentGender]) || [];
 
-  if (currentUserIsAdmin) {
-    renderAdmin();
+  if (!currentUserIsAdmin) {
+    const userGender = currentGender || 'mulher';
+    app.innerHTML = `
+      ${renderTabBar()}
+      <div class="screen home-user">
+        <div class="user-home-topbar">
+          <div class="user-home-name-top">${currentUserName}</div>
+          <button class="user-header-logout" onclick="doLogout()">Sair</button>
+        </div>
+        <div class="home-title">ANTIGRAVITY</div>
+        <button class="home-btn today-btn" onclick="selectGender('${userGender}')">INICIAR</button>
+      </div>
+    `;
     return;
   }
 
-  const stats = getWeeklyStats();
-  const userGender = currentGender || 'mulher';
+  let adminTodayBtn = '';
+  if (todayWorkout) {
+    adminTodayBtn = `
+      <button class="home-btn today-btn" onclick="selectGender('${currentGender || 'homem'}'); setTimeout(() => selectDay('${todayWorkout.id}'), 10)">
+        TREINO DE HOJE — ${todayWorkout.title}
+      </button>
+    `;
+  }
+
+  const statsHtml = currentGender ? `
+    <div class="quick-stats">
+      <div class="stat-bar">
+        <div class="stat-label">Semana</div>
+        <div class="stat-bar-track">
+          <div class="stat-bar-fill" style="width: ${stats.total > 0 ? (stats.completed / stats.total * 100) : 0}%"></div>
+        </div>
+        <div class="stat-value">${stats.completed}/${stats.total}</div>
+      </div>
+      ${stats.streak > 0 ? `<div class="streak-badge">🔥 ${stats.streak} sem${stats.streak > 1 ? 's' : ''}</div>` : ''}
+    </div>
+  ` : '';
+
+  let customSection = '';
+  if (currentGender && customDays.length > 0) {
+    const customCards = customDays.map(d => `
+      <div class="day-card custom" onclick="selectDay('${d.id}')">
+        <div class="day-header">
+          <span class="day-name">${d.day}</span>
+          <span class="custom-tag">⭐ PERSONALIZADO</span>
+        </div>
+        <div class="day-title">${d.title}</div>
+        <div class="day-count">${d.exercises.length} exercícios</div>
+      </div>
+    `).join('');
+    customSection = `
+      <div class="section-title" style="margin-top: 20px; margin-bottom: 12px; color: var(--secondary); font-size: 0.8rem; font-weight: 700; letter-spacing: 1px;">TREINOS PERSONALIZADOS</div>
+      ${customCards}
+    `;
+  }
 
   app.innerHTML = `
     ${renderTabBar()}
-    <div class="screen home-user">
-      <div class="user-home-topbar">
-        <div class="user-home-name-top">${currentUserName}</div>
-        <button class="user-header-logout" onclick="doLogout()">Sair</button>
-      </div>
+    <div class="screen home">
       <div class="home-title">ANTIGRAVITY</div>
-      <button class="home-btn today-btn" onclick="selectGender('${userGender}')">INICIAR</button>
+      <div class="home-subtitle">Escolha seu treino</div>
+      ${currentUserId ? `<div class="home-user-badge">${currentUserIsAdmin ? '👑' : '👤'} ${currentUserName} — Login: ${currentUserId} <span class="logout-link" onclick="doLogout()">sair</span></div>` : ''}
+      ${adminTodayBtn}
+      <button class="home-btn" onclick="selectGender('homem')">HOMEM</button>
+      <button class="home-btn female" onclick="selectGender('mulher')">MULHER</button>
+      ${statsHtml}
+      ${customSection}
+      ${currentUserIsAdmin ? `
+        <div style="margin-top:24px;">
+          <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:12px;letter-spacing:1px;font-weight:700;">ADMIN</div>
+          <button class="home-btn" style="background:#6c5ce7;font-size:0.85rem;" onclick="navigate('admin')">⚙️ Painel Admin</button>
+          <button class="home-btn" style="background:#00b894;font-size:0.85rem;margin-top:8px;" onclick="saveAllConfig()">💾 Salvar dados na API</button>
+        </div>
+      ` : ''}
     </div>
   `;
 }
@@ -820,11 +902,7 @@ function goHome() {
   currentTab = 'home';
   builderMultiMode = false;
   builderMultiPick = [];
-  if (currentUserIsAdmin) {
-    renderAdmin();
-  } else {
-    navigate('home');
-  }
+  navigate('home');
 }
 
 function selectDay(dayId) {
@@ -2297,51 +2375,61 @@ function setCustomRestTime() {
 function renderAdmin() {
   if (!currentUserIsAdmin) { renderHome(); return; }
   currentView = 'admin';
-  currentTab = 'admin';
 
   const usersHtml = remoteConfig.users.map(u => `
     <div class="admin-user-row">
-      <div class="admin-user-info">
-        <span class="admin-user-icon">${u.isAdmin ? '👑' : '👤'}</span>
-        <div class="admin-user-details">
-          <strong>${u.name}</strong>
-          <span class="admin-user-login">Login: ${u.id}</span>
-        </div>
-      </div>
+      <span class="admin-user-info">${u.isAdmin ? '👑' : '👤'} <strong>Login: ${u.id}</strong> — ${u.name}</span>
       ${u.id !== 387 ? `<button class="admin-remove-btn" onclick="removeUser(${u.id})">✕</button>` : ''}
     </div>
   `).join('');
 
+  const editCount = Object.keys(remoteConfig.exerciseEdits).length;
+
   app.innerHTML = `
     <div class="screen admin-screen">
-      <div class="admin-header">
-        <div class="admin-header-top">
-          <div class="admin-title">⚙️ Painel Admin</div>
-          <button class="admin-logout-btn" onclick="doLogout()">Sair</button>
-        </div>
-        <div class="admin-subtitle">Gerenciar usuários</div>
+      <div class="day-list-header">
+        <button class="btn-back-days" onclick="goHome()">← Voltar</button>
+        <div class="day-list-title">⚙️ Admin</div>
+        <div></div>
       </div>
 
-      <div class="admin-section">
-        <div class="admin-section-title">📋 Usuários Cadastrados</div>
+        <div class="admin-section">
+        <div class="admin-section-title">Usuários</div>
         <div class="admin-user-list">${usersHtml}</div>
-      </div>
-
-      <div class="admin-section">
-        <div class="admin-section-title">➕ Novo Usuário</div>
         <div class="admin-add-user">
-          <input class="admin-input" type="number" id="new-user-id" placeholder="Login (número)" inputmode="numeric">
+          <input class="admin-input" type="number" id="new-user-id" placeholder="Login" inputmode="numeric">
           <input class="admin-input" type="password" id="new-user-pass" placeholder="Senha" inputmode="numeric">
-          <input class="admin-input" type="text" id="new-user-name" placeholder="Nome do aluno">
+          <input class="admin-input" type="text" id="new-user-name" placeholder="Nome do usuário">
           <select class="admin-input" id="new-user-gender">
             <option value="homem">Homem</option>
             <option value="mulher">Mulher</option>
           </select>
-          <button class="admin-btn-create" onclick="createUser()">+ Criar Usuário</button>
+          <button class="admin-btn" onclick="createUser()">+ Criar</button>
         </div>
+      </div>
+
+      <div class="admin-section">
+        <div class="admin-section-title">Exercícios Editados (${editCount})</div>
+        <div class="admin-exercise-search">
+          <input class="admin-input" type="text" id="admin-ex-search" placeholder="Buscar exercício por nome ou ID..." oninput="filterAdminExercises()">
+        </div>
+        <div id="admin-exercise-list" class="admin-exercise-list"></div>
+      </div>
+
+      <div class="admin-section">
+        <div class="admin-section-title">Dias da Semana</div>
+        <div id="admin-schedule" class="admin-schedule"></div>
+      </div>
+
+      <div class="admin-section">
+        <button class="admin-save-btn" id="admin-save-btn" onclick="saveAllConfig()">💾 Salvar tudo na API</button>
+        <button class="admin-export-btn" onclick="exportConfig()">📦 Exportar Config JSON</button>
       </div>
     </div>
   `;
+
+  filterAdminExercises();
+  renderAdminSchedule();
 }
 
 function filterAdminExercises() {
