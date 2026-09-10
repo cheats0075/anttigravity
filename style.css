@@ -1336,11 +1336,21 @@ body {
   padding-bottom: 12px;
   margin-bottom: 16px;
   -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 210, 255, 0.3) transparent;
 }
 
 .library-filters::-webkit-scrollbar {
-  display: none;
+  height: 4px;
+}
+
+.library-filters::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.library-filters::-webkit-scrollbar-thumb {
+  background: rgba(0, 210, 255, 0.3);
+  border-radius: 4px;
 }
 
 .filter-chip {
