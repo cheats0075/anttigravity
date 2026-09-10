@@ -957,6 +957,10 @@ body::after {
   justify-content: space-between;
   margin-bottom: 24px;
   padding-top: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg-deep);
 }
 
 .workout-title {
@@ -1175,6 +1179,7 @@ body::after {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  padding-bottom: 140px;
   background: var(--bg-deep);
   animation: fadeIn 0.3s ease;
 }
@@ -1466,6 +1471,17 @@ body::after {
   padding: 20px 16px;
   padding-bottom: max(20px, env(safe-area-inset-bottom));
   margin-top: auto;
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  z-index: 50;
+  background: rgba(5, 5, 16, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(100, 120, 255, 0.1);
 }
 
 .csa-nav-arrow {
@@ -1681,6 +1697,55 @@ body::after {
   border-color: var(--accent-light);
   color: var(--accent-light);
   background: rgba(99, 102, 241, 0.05);
+}
+
+.workout-bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  z-index: 50;
+  background: rgba(5, 5, 16, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(100, 120, 255, 0.1);
+  padding: 14px 16px;
+  padding-bottom: max(14px, env(safe-area-inset-bottom));
+  box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.3);
+}
+
+.builder-multi-confirm-bar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  z-index: 50;
+  background: rgba(5, 5, 16, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(100, 120, 255, 0.1);
+  padding: 14px 16px;
+  padding-bottom: max(14px, env(safe-area-inset-bottom));
+  box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.3);
+  text-align: center;
+}
+
+.builder-confirm-btn {
+  padding: 14px 40px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--success-gradient);
+  color: white;
+  box-shadow: 0 4px 20px var(--success-glow);
+  transition: all var(--transition);
+  font-family: 'Inter', sans-serif;
 }
 
 .btn-history {

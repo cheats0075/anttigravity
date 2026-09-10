@@ -1031,19 +1031,21 @@ function renderWorkout() {
   })(mergeWorkouts());
 
   html += `
-    <div class="btn-row" style="justify-content: center;">
-      <button class="btn-back-days" onclick="goDayList()">← Voltar</button>
-      ${currentUserIsAdmin ? (
-        isRestDayWorkout && currentWorkout.exercises.length > 0
-          ? `<button class="btn-reset" onclick="resetRestDay()">Limpar Treino</button>`
-          : `<button class="btn-reset" onclick="resetProgress()">Zerar Treinos</button>`
-      ) : ''}
+    <div class="workout-bottom-bar">
+      <div class="btn-row" style="justify-content: center; margin: 0;">
+        <button class="btn-back-days" onclick="goDayList()">← Voltar</button>
+        ${currentUserIsAdmin ? (
+          isRestDayWorkout && currentWorkout.exercises.length > 0
+            ? `<button class="btn-reset" onclick="resetRestDay()">Limpar Treino</button>`
+            : `<button class="btn-reset" onclick="resetProgress()">Zerar Treinos</button>`
+        ) : ''}
+      </div>
+      ${currentUserIsAdmin ? `
+      <div class="btn-row" style="justify-content: center; margin-top: 8px;">
+        <button class="btn-reset" style="background:var(--accent);" onclick="openAddToWorkoutPicker()">+ Adicionar Exercício</button>
+      </div>
+      ` : ''}
     </div>
-    ${currentUserIsAdmin ? `
-    <div class="btn-row" style="justify-content: center; margin-top: 8px;">
-      <button class="btn-reset" style="background:var(--accent);" onclick="openAddToWorkoutPicker()">+ Adicionar Exercício</button>
-    </div>
-    ` : ''}
   </div>`;
   app.innerHTML = html;
 }
