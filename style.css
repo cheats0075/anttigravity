@@ -3066,3 +3066,193 @@ select {
 .toast.show {
   transform: translateX(-50%) translateY(0);
 }
+
+/* ═══════════════════════════════════════════════════════
+   COMPACT MOBILE - everything fits without scrolling
+   ═══════════════════════════════════════════════════════ */
+
+/* Workout page - compact cards */
+.workout-screen .exercise-card {
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  border-radius: 10px;
+}
+
+.workout-screen .exercise-thumb-lg {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+}
+
+.workout-screen .exercise-row {
+  gap: 8px;
+}
+
+.workout-screen .exercise-name {
+  font-size: 0.82rem;
+}
+
+.workout-screen .exercise-muscle {
+  font-size: 0.55rem;
+  padding: 2px 7px;
+  margin-top: 2px;
+}
+
+.workout-screen .exercise-details {
+  font-size: 0.7rem;
+  margin-top: 1px;
+}
+
+.workout-screen .exercise-progress {
+  font-size: 0.65rem;
+  margin-top: 2px;
+}
+
+.workout-screen .exercise-check {
+  width: 28px;
+  height: 28px;
+  font-size: 0.9rem;
+}
+
+.workout-screen .workout-title {
+  font-size: 1.2rem;
+}
+
+.workout-screen .workout-day {
+  font-size: 0.7rem;
+}
+
+/* Exercise execution - compact layout */
+.csa-exercise .csa-header {
+  padding: 10px 14px;
+}
+
+.csa-exercise .csa-title {
+  font-size: 0.95rem;
+}
+
+.csa-exercise .csa-timer {
+  font-size: 0.75rem;
+  padding: 3px 10px;
+}
+
+.csa-exercise .csa-card {
+  padding: 10px 14px;
+  margin: 8px;
+  border-radius: 14px;
+}
+
+.csa-exercise .csa-exercise-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.csa-exercise .csa-muscle-badge {
+  padding: 3px 12px;
+  font-size: 0.6rem;
+  margin-bottom: 6px;
+}
+
+.csa-exercise .csa-stats-row {
+  gap: 16px;
+  font-size: 0.75rem;
+  margin-bottom: 8px;
+}
+
+.csa-exercise .csa-exercise-image {
+  width: 130px;
+  height: 130px;
+  border-radius: 12px;
+  margin-bottom: 10px;
+}
+
+.csa-exercise .csa-reps-count {
+  font-size: 2rem;
+}
+
+.csa-exercise .csa-reps-label {
+  font-size: 0.7rem;
+  margin-top: 2px;
+}
+
+.csa-exercise .csa-reps-info {
+  margin-bottom: 8px;
+}
+
+.csa-exercise .csa-set-indicators {
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.csa-exercise .csa-set-dot {
+  width: 32px;
+  height: 32px;
+  font-size: 0.75rem;
+}
+
+.csa-exercise .csa-weight-section {
+  margin-bottom: 6px;
+}
+
+.csa-exercise .csa-weight-label {
+  font-size: 0.7rem;
+  margin-bottom: 4px;
+}
+
+.csa-exercise .csa-weight-btn {
+  width: 36px;
+  height: 36px;
+  font-size: 1.1rem;
+}
+
+.csa-exercise .csa-weight-field {
+  width: 70px;
+  height: 36px;
+  font-size: 1.1rem;
+  border-radius: 8px;
+}
+
+.csa-exercise .csa-weight-unit {
+  font-size: 0.8rem;
+}
+
+.csa-exercise .csa-tips {
+  padding: 8px 12px;
+  margin: 0 8px 6px;
+  font-size: 0.72rem;
+  border-radius: 8px;
+}
+
+.csa-exercise .csa-settings-btn {
+  padding: 8px;
+  margin: 0 8px 6px;
+  font-size: 0.75rem;
+}
+
+.csa-exercise .csa-bottom-nav {
+  padding: 10px 16px;
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+  gap: 20px;
+}
+
+.csa-exercise .csa-check-btn {
+  width: 70px;
+  height: 70px;
+  border-width: 3px;
+}
+
+.csa-exercise .csa-check-btn svg {
+  width: 28px;
+  height: 28px;
+}
+
+.csa-exercise .csa-check-btn span {
+  font-size: 0.65rem;
+}
+
+.csa-exercise .csa-nav-arrow {
+  width: 40px;
+  height: 40px;
+  font-size: 1.1rem;
+}
