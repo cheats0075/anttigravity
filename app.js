@@ -1607,7 +1607,7 @@ function renderLibrary() {
     ${pickerMode ? `<div class="screen library-screen">
       <div class="day-list-header" style="margin-bottom: 16px;">
         <button class="btn-back-days" onclick="closePicker()">← Fechar</button>
-        <div class="day-list-title">Selecionar Exercício</div>
+        <div class="day-list-title">Selecionar Treinos (${builderMultiPick.length})</div>
         <div></div>
       </div>` : `<div class="screen library-screen">`}
       <div class="library-search-wrapper">
@@ -1615,9 +1615,9 @@ function renderLibrary() {
         <input class="library-search" type="text" placeholder="Buscar exercício..." value="${librarySearchQuery}" oninput="onLibrarySearch(this.value)">
       </div>
       <div class="library-filters scroll-x">${filtersHtml}</div>
-      <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:12px;">${filtered.length} exercício${filtered.length !== 1 ? 's' : ''} encontrado${filtered.length !== 1 ? 's' : ''}</div>
-      <div class="library-grid">${cardsHtml}</div>
-      ${filtered.length > libraryDisplayCount ? `<div id="library-load-more" style="text-align:center;padding:20px;"><button class="btn-back-days" onclick="loadMoreLibrary()">Carregar mais</button></div>` : ''}
+      <div id="library-count" style="font-size:0.7rem;color:var(--text-muted);margin-bottom:12px;">${filtered.length} exercício${filtered.length !== 1 ? 's' : ''} encontrado${filtered.length !== 1 ? 's' : ''} — toque para selecionar</div>
+      <div id="library-grid" class="library-grid">${cardsHtml}</div>
+      <div id="library-load-more" style="text-align:center;padding:20px;${filtered.length > libraryDisplayCount ? '' : 'display:none;'}"><button class="btn-back-days" onclick="loadMoreLibrary()">Carregar mais</button></div>
       ${pickerMode ? '' : renderTabBar()}
     </div>
   `;
@@ -1640,18 +1640,83 @@ function renderLibrary() {
 function onLibrarySearch(value) {
   librarySearchQuery = value;
   libraryDisplayCount = 30;
-  renderLibrary();
+  updateLibraryResults();
+}
+
+function updateLibraryResults() {
+  const db = getExercisesDB();
+  const query = librarySearchQuery.toLowerCase();
+  const filter = libraryActiveFilter;
+
+  let filtered = db;
+  if (query) {
+    filtered = filtered.filter(ex =>
+      ex.name.toLowerCase().includes(query) ||
+      ex.muscle.toLowerCase().includes(query) ||
+      ex.category.toLowerCase().includes(query)
+    );
+  }
+  if (filter !== 'Todos') {
+    filtered = filtered.filter(ex => ex.muscle === filter || ex.category === filter);
+  }
+
+  const displayItems = filtered.slice(0, libraryDisplayCount);
+
+  const cardsHtml = displayItems.map(ex => {
+    const gif = getExerciseGifPath(ex);
+    const onclick = pickerMode
+      ? `addExerciseFromPicker(${ex.id})`
+      : `showExerciseDetail(${ex.id})`;
+    return `
+      <div class="library-card" onclick="${onclick}">
+        <img class="library-card-gif" src="${gif}" alt="${ex.name}" onerror="this.style.display='none'" loading="lazy">
+        <div class="library-card-name">${ex.name}</div>
+        <div class="library-card-muscle">${ex.muscle}</div>
+      </div>
+    `;
+  }).join('');
+
+  const countEl = document.getElementById('library-count');
+  const gridEl = document.getElementById('library-grid');
+  const loadMoreEl = document.getElementById('library-load-more');
+
+  if (countEl) {
+    countEl.textContent = `${filtered.length} exercício${filtered.length !== 1 ? 's' : ''} encontrado${filtered.length !== 1 ? 's' : ''} — toque para selecionar`;
+  }
+
+  if (gridEl) {
+    gridEl.innerHTML = cardsHtml;
+  }
+
+  if (loadMoreEl) {
+    loadMoreEl.style.display = filtered.length > libraryDisplayCount ? 'block' : 'none';
+  }
 }
 
 function setLibraryFilter(filter) {
   libraryActiveFilter = filter;
   libraryDisplayCount = 30;
-  renderLibrary();
+  if (pickerMode) {
+    updateLibraryResults();
+    updateFilterButtons();
+  } else {
+    renderLibrary();
+  }
+}
+
+function updateFilterButtons() {
+  const filtersHtml = MUSCLE_FILTERS.map(f =>
+    `<button class="filter-chip ${f === libraryActiveFilter ? 'active' : ''}" onclick="setLibraryFilter('${f}')">${f}</button>`
+  ).join('');
+  const filtersEl = document.querySelector('.library-filters');
+  if (filtersEl) {
+    filtersEl.innerHTML = filtersHtml;
+  }
 }
 
 function loadMoreLibrary() {
   libraryDisplayCount += 30;
-  renderLibrary();
+  updateLibraryResults();
 }
 
 function showExerciseDetail(exerciseId) {
