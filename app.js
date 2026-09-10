@@ -747,8 +747,10 @@ function renderHome() {
       <div class="home-subtitle">Escolha seu treino</div>
       ${currentUserId ? `<div class="home-user-badge">${currentUserIsAdmin ? '👑' : '👤'} ${currentUserName} — Login: ${currentUserId} <span class="logout-link" onclick="doLogout()">sair</span></div>` : ''}
       ${adminTodayBtn}
-      <button class="home-btn" onclick="selectGender('homem')">HOMEM</button>
-      <button class="home-btn female" onclick="selectGender('mulher')">MULHER</button>
+      ${!currentUserIsAdmin ? `
+        <button class="home-btn" onclick="selectGender('homem')">HOMEM</button>
+        <button class="home-btn female" onclick="selectGender('mulher')">MULHER</button>
+      ` : ''}
       ${statsHtml}
       ${customSection}
       ${currentUserIsAdmin ? `
@@ -2378,7 +2380,13 @@ function renderAdmin() {
 
   const usersHtml = remoteConfig.users.map(u => `
     <div class="admin-user-row">
-      <span class="admin-user-info">${u.isAdmin ? '👑' : '👤'} <strong>Login: ${u.id}</strong> — ${u.name}</span>
+      <div class="admin-user-info">
+        <span class="admin-user-icon">${u.isAdmin ? '👑' : '👤'}</span>
+        <div class="admin-user-details">
+          <strong>${u.name}</strong>
+          <span class="admin-user-login">Login: ${u.id}</span>
+        </div>
+      </div>
       ${u.id !== 387 ? `<button class="admin-remove-btn" onclick="removeUser(${u.id})">✕</button>` : ''}
     </div>
   `).join('');
@@ -2386,30 +2394,37 @@ function renderAdmin() {
   const editCount = Object.keys(remoteConfig.exerciseEdits).length;
 
   app.innerHTML = `
+    ${renderTabBar()}
     <div class="screen admin-screen">
-      <div class="day-list-header">
-        <button class="btn-back-days" onclick="goHome()">← Voltar</button>
-        <div class="day-list-title">⚙️ Admin</div>
-        <div></div>
+      <div class="admin-header">
+        <div class="admin-header-top">
+          <div class="admin-title">⚙️ Painel Admin</div>
+          <button class="admin-logout-btn" onclick="doLogout()">Sair</button>
+        </div>
+        <div class="admin-subtitle">Gerenciar usuários e configurações</div>
       </div>
 
-        <div class="admin-section">
-        <div class="admin-section-title">Usuários</div>
+      <div class="admin-section">
+        <div class="admin-section-title">📋 Usuários Cadastrados</div>
         <div class="admin-user-list">${usersHtml}</div>
+      </div>
+
+      <div class="admin-section">
+        <div class="admin-section-title">➕ Novo Usuário</div>
         <div class="admin-add-user">
-          <input class="admin-input" type="number" id="new-user-id" placeholder="Login" inputmode="numeric">
+          <input class="admin-input" type="number" id="new-user-id" placeholder="Login (número)" inputmode="numeric">
           <input class="admin-input" type="password" id="new-user-pass" placeholder="Senha" inputmode="numeric">
-          <input class="admin-input" type="text" id="new-user-name" placeholder="Nome do usuário">
+          <input class="admin-input" type="text" id="new-user-name" placeholder="Nome do aluno">
           <select class="admin-input" id="new-user-gender">
             <option value="homem">Homem</option>
             <option value="mulher">Mulher</option>
           </select>
-          <button class="admin-btn" onclick="createUser()">+ Criar</button>
+          <button class="admin-btn-create" onclick="createUser()">+ Criar Usuário</button>
         </div>
       </div>
 
       <div class="admin-section">
-        <div class="admin-section-title">Exercícios Editados (${editCount})</div>
+        <div class="admin-section-title">📝 Exercícios Editados (${editCount})</div>
         <div class="admin-exercise-search">
           <input class="admin-input" type="text" id="admin-ex-search" placeholder="Buscar exercício por nome ou ID..." oninput="filterAdminExercises()">
         </div>
@@ -2417,7 +2432,7 @@ function renderAdmin() {
       </div>
 
       <div class="admin-section">
-        <div class="admin-section-title">Dias da Semana</div>
+        <div class="admin-section-title">📅 Dias da Semana</div>
         <div id="admin-schedule" class="admin-schedule"></div>
       </div>
 
