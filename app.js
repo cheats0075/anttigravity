@@ -1976,11 +1976,9 @@ function renderBuilderMultiPicker() {
       <div id="builder-count" style="font-size:0.7rem;color:var(--text-muted);margin-bottom:12px;">${filtered.length} exercício(s) encontrado(s) — toque para selecionar</div>
       <div id="builder-grid" class="library-grid">${cardsHtml}</div>
       <div id="builder-load-more" style="text-align:center;padding:20px;${filtered.length > libraryDisplayCount ? '' : 'display:none;'}"><button class="btn-back-days" onclick="loadMoreBuilderMulti()">Carregar mais</button></div>
-      ${builderMultiPick.length > 0 ? `
-        <div class="builder-multi-confirm-bar">
-          <button class="builder-confirm-btn" onclick="confirmBuilderMultiPick()">✓ Concluir (${builderMultiPick.length})</button>
-        </div>
-      ` : ''}
+      <div class="builder-multi-confirm-bar" style="${builderMultiPick.length > 0 ? '' : 'display:none;'}">
+        <button class="builder-confirm-btn" onclick="confirmBuilderMultiPick()">✓ Concluir (${builderMultiPick.length})</button>
+      </div>
     </div>
   `;
 }
@@ -1992,7 +1990,24 @@ function toggleBuilderPick(exId) {
   } else {
     builderMultiPick.push(exId);
   }
-  renderBuilderMultiPicker();
+  updateBuilderMultiResults();
+  updateBuilderPickCount();
+}
+
+function updateBuilderPickCount() {
+  const titleEl = document.querySelector('.day-list-title');
+  if (titleEl) {
+    titleEl.textContent = `Selecionar Treinos (${builderMultiPick.length})`;
+  }
+  const bar = document.querySelector('.builder-multi-confirm-bar');
+  if (bar) {
+    if (builderMultiPick.length > 0) {
+      bar.innerHTML = `<button class="builder-confirm-btn" onclick="confirmBuilderMultiPick()">✓ Concluir (${builderMultiPick.length})</button>`;
+      bar.style.display = 'flex';
+    } else {
+      bar.style.display = 'none';
+    }
+  }
 }
 
 function onBuilderMultiSearch(value) {
