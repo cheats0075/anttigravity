@@ -1958,9 +1958,9 @@ function renderBuilderMultiPicker() {
         <input class="library-search" type="text" placeholder="Buscar exercício..." value="${librarySearchQuery}" oninput="onBuilderMultiSearch(this.value)">
       </div>
       <div class="library-filters scroll-x">${filtersHtml}</div>
-      <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:12px;">${filtered.length} exercício(s) encontrado(s) — toque para selecionar</div>
-      <div class="library-grid">${cardsHtml}</div>
-      ${filtered.length > libraryDisplayCount ? `<div style="text-align:center;padding:20px;"><button class="btn-back-days" onclick="loadMoreBuilderMulti()">Carregar mais</button></div>` : ''}
+      <div id="builder-count" style="font-size:0.7rem;color:var(--text-muted);margin-bottom:12px;">${filtered.length} exercício(s) encontrado(s) — toque para selecionar</div>
+      <div id="builder-grid" class="library-grid">${cardsHtml}</div>
+      <div id="builder-load-more" style="text-align:center;padding:20px;${filtered.length > libraryDisplayCount ? '' : 'display:none;'}"><button class="btn-back-days" onclick="loadMoreBuilderMulti()">Carregar mais</button></div>
       ${builderMultiPick.length > 0 ? `
         <div class="builder-multi-confirm-bar">
           <button class="builder-confirm-btn" onclick="confirmBuilderMultiPick()">✓ Concluir (${builderMultiPick.length})</button>
@@ -1983,18 +1983,76 @@ function toggleBuilderPick(exId) {
 function onBuilderMultiSearch(value) {
   librarySearchQuery = value;
   libraryDisplayCount = 50;
-  renderBuilderMultiPicker();
+  updateBuilderMultiResults();
+}
+
+function updateBuilderMultiResults() {
+  const db = getExercisesDB();
+  const query = librarySearchQuery.toLowerCase();
+  const filter = libraryActiveFilter;
+
+  let filtered = db;
+  if (query) {
+    filtered = filtered.filter(ex =>
+      ex.name.toLowerCase().includes(query) ||
+      ex.muscle.toLowerCase().includes(query) ||
+      ex.category.toLowerCase().includes(query)
+    );
+  }
+  if (filter !== 'Todos') {
+    filtered = filtered.filter(ex => ex.muscle === filter || ex.category === filter);
+  }
+
+  const displayItems = filtered.slice(0, libraryDisplayCount);
+
+  const cardsHtml = displayItems.map(ex => {
+    const gif = getExerciseGifPath(ex);
+    const checked = builderMultiPick.includes(ex.id);
+    return `
+      <div class="library-card ${checked ? 'picked' : ''}" onclick="toggleBuilderPick(${ex.id})" style="position:relative;">
+        <div class="builder-pick-check">${checked ? '✓' : ''}</div>
+        <img class="library-card-gif" src="${gif}" alt="${ex.name}" onerror="this.style.display='none'" loading="lazy">
+        <div class="library-card-name">${ex.name}</div>
+        <div class="library-card-muscle">${ex.muscle}</div>
+      </div>
+    `;
+  }).join('');
+
+  const countEl = document.getElementById('builder-count');
+  const gridEl = document.getElementById('builder-grid');
+  const loadMoreEl = document.getElementById('builder-load-more');
+
+  if (countEl) {
+    countEl.textContent = `${filtered.length} exercício(s) encontrado(s) — toque para selecionar`;
+  }
+  if (gridEl) {
+    gridEl.innerHTML = cardsHtml;
+  }
+  if (loadMoreEl) {
+    loadMoreEl.style.display = filtered.length > libraryDisplayCount ? 'block' : 'none';
+  }
+}
+
+function updateBuilderFilterButtons() {
+  const filtersHtml = MUSCLE_FILTERS.map(f =>
+    `<button class="filter-chip ${f === libraryActiveFilter ? 'active' : ''}" onclick="setBuilderMultiFilter('${f}')">${f}</button>`
+  ).join('');
+  const filtersEl = document.querySelector('.library-filters');
+  if (filtersEl) {
+    filtersEl.innerHTML = filtersHtml;
+  }
 }
 
 function setBuilderMultiFilter(filter) {
   libraryActiveFilter = filter;
   libraryDisplayCount = 50;
-  renderBuilderMultiPicker();
+  updateBuilderMultiResults();
+  updateBuilderFilterButtons();
 }
 
 function loadMoreBuilderMulti() {
   libraryDisplayCount += 50;
-  renderBuilderMultiPicker();
+  updateBuilderMultiResults();
 }
 
 function confirmBuilderMultiPick() {
