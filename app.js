@@ -1614,7 +1614,11 @@ function renderLibrary() {
         <span class="library-search-icon">🔍</span>
         <input class="library-search" type="text" placeholder="Buscar exercício..." value="${librarySearchQuery}" oninput="onLibrarySearch(this.value)">
       </div>
-      <div class="library-filters scroll-x">${filtersHtml}</div>
+      <div class="filters-container">
+        <button class="filters-arrow filters-arrow-left" onclick="scrollFilters('library-filters', -1)">‹</button>
+        <div id="library-filters" class="library-filters scroll-x">${filtersHtml}</div>
+        <button class="filters-arrow filters-arrow-right" onclick="scrollFilters('library-filters', 1)">›</button>
+      </div>
       <div id="library-count" style="font-size:0.7rem;color:var(--text-muted);margin-bottom:12px;">${filtered.length} exercício${filtered.length !== 1 ? 's' : ''} encontrado${filtered.length !== 1 ? 's' : ''} — toque para selecionar</div>
       <div id="library-grid" class="library-grid">${cardsHtml}</div>
       <div id="library-load-more" style="text-align:center;padding:20px;${filtered.length > libraryDisplayCount ? '' : 'display:none;'}"><button class="btn-back-days" onclick="loadMoreLibrary()">Carregar mais</button></div>
@@ -1708,9 +1712,16 @@ function updateFilterButtons() {
   const filtersHtml = MUSCLE_FILTERS.map(f =>
     `<button class="filter-chip ${f === libraryActiveFilter ? 'active' : ''}" onclick="setLibraryFilter('${f}')">${f}</button>`
   ).join('');
-  const filtersEl = document.querySelector('.library-filters');
+  const filtersEl = document.getElementById('library-filters');
   if (filtersEl) {
     filtersEl.innerHTML = filtersHtml;
+  }
+}
+
+function scrollFilters(containerId, direction) {
+  const el = document.getElementById(containerId);
+  if (el) {
+    el.scrollBy({ left: direction * 150, behavior: 'smooth' });
   }
 }
 
@@ -1957,7 +1968,11 @@ function renderBuilderMultiPicker() {
         <span class="library-search-icon">🔍</span>
         <input class="library-search" type="text" placeholder="Buscar exercício..." value="${librarySearchQuery}" oninput="onBuilderMultiSearch(this.value)">
       </div>
-      <div class="library-filters scroll-x">${filtersHtml}</div>
+      <div class="filters-container">
+        <button class="filters-arrow filters-arrow-left" onclick="scrollFilters('builder-filters', -1)">‹</button>
+        <div id="builder-filters" class="library-filters scroll-x">${filtersHtml}</div>
+        <button class="filters-arrow filters-arrow-right" onclick="scrollFilters('builder-filters', 1)">›</button>
+      </div>
       <div id="builder-count" style="font-size:0.7rem;color:var(--text-muted);margin-bottom:12px;">${filtered.length} exercício(s) encontrado(s) — toque para selecionar</div>
       <div id="builder-grid" class="library-grid">${cardsHtml}</div>
       <div id="builder-load-more" style="text-align:center;padding:20px;${filtered.length > libraryDisplayCount ? '' : 'display:none;'}"><button class="btn-back-days" onclick="loadMoreBuilderMulti()">Carregar mais</button></div>
@@ -2037,7 +2052,7 @@ function updateBuilderFilterButtons() {
   const filtersHtml = MUSCLE_FILTERS.map(f =>
     `<button class="filter-chip ${f === libraryActiveFilter ? 'active' : ''}" onclick="setBuilderMultiFilter('${f}')">${f}</button>`
   ).join('');
-  const filtersEl = document.querySelector('.library-filters');
+  const filtersEl = document.getElementById('builder-filters');
   if (filtersEl) {
     filtersEl.innerHTML = filtersHtml;
   }
