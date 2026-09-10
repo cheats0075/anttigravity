@@ -1948,7 +1948,7 @@ function renderBuilderMultiPicker() {
     const gif = getExerciseGifPath(ex);
     const checked = builderMultiPick.includes(ex.id);
     return `
-      <div class="library-card ${checked ? 'picked' : ''}" onclick="toggleBuilderPick(${ex.id})" style="position:relative;">
+      <div class="library-card ${checked ? 'picked' : ''}" data-ex-id="${ex.id}" onclick="toggleBuilderPick(${ex.id})" style="position:relative;">
         <div class="builder-pick-check">${checked ? '✓' : ''}</div>
         <img class="library-card-gif" src="${gif}" alt="${ex.name}" onerror="this.style.display='none'" loading="lazy">
         <div class="library-card-name">${ex.name}</div>
@@ -1990,7 +1990,13 @@ function toggleBuilderPick(exId) {
   } else {
     builderMultiPick.push(exId);
   }
-  updateBuilderMultiResults();
+  const card = document.querySelector(`[data-ex-id="${exId}"]`);
+  if (card) {
+    const isChecked = builderMultiPick.includes(exId);
+    card.classList.toggle('picked', isChecked);
+    const check = card.querySelector('.builder-pick-check');
+    if (check) check.textContent = isChecked ? '✓' : '';
+  }
   updateBuilderPickCount();
 }
 
@@ -2039,7 +2045,7 @@ function updateBuilderMultiResults() {
     const gif = getExerciseGifPath(ex);
     const checked = builderMultiPick.includes(ex.id);
     return `
-      <div class="library-card ${checked ? 'picked' : ''}" onclick="toggleBuilderPick(${ex.id})" style="position:relative;">
+      <div class="library-card ${checked ? 'picked' : ''}" data-ex-id="${ex.id}" onclick="toggleBuilderPick(${ex.id})" style="position:relative;">
         <div class="builder-pick-check">${checked ? '✓' : ''}</div>
         <img class="library-card-gif" src="${gif}" alt="${ex.name}" onerror="this.style.display='none'" loading="lazy">
         <div class="library-card-name">${ex.name}</div>
