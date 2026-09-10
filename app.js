@@ -977,7 +977,7 @@ function renderWorkout() {
   if (!currentWorkout) { goHome(); return; }
 
   let html = `
-    <div class="screen">
+    <div class="screen workout-screen">
       <div class="workout-header">
         <button class="btn-back-days" onclick="goDayList()">← Voltar</button>
         <div class="workout-title-row">
@@ -986,6 +986,7 @@ function renderWorkout() {
         </div>
         <button class="share-btn" onclick="shareWorkout(currentWorkout)">📤</button>
       </div>
+      <div class="workout-scroll-content">
   `;
 
   currentWorkout.exercises.forEach((ex, idx) => {
@@ -1024,6 +1025,8 @@ function renderWorkout() {
       </div>
     `;
   }
+
+  html += `</div>`;
 
   const isRestDayWorkout = (all => {
     const day = (all[currentGender] || []).find(d => d.id === currentWorkout.id);
@@ -1182,37 +1185,39 @@ function renderActiveExercise() {
           <div class="csa-title">Execução</div>
           <div class="csa-timer" id="workout-duration">${exerciseElapsed}</div>
         </div>
-        <div class="csa-card">
-          <div class="csa-exercise-name">${activeExercise.name}</div>
-          ${activeExercise.muscle ? `<div class="csa-muscle-badge">${activeExercise.muscle}</div>` : ''}
-          <div class="csa-stats-row">
-            <span>Séries: ${activeExercise.sets}</span>
-            <span>Descanso: ${REST_TIME}s</span>
+        <div class="csa-scroll-content">
+          <div class="csa-card">
+            <div class="csa-exercise-name">${activeExercise.name}</div>
+            ${activeExercise.muscle ? `<div class="csa-muscle-badge">${activeExercise.muscle}</div>` : ''}
+            <div class="csa-stats-row">
+              <span>Séries: ${activeExercise.sets}</span>
+              <span>Descanso: ${REST_TIME}s</span>
+            </div>
+            <img class="csa-exercise-image" src="${gif}" alt="${activeExercise.name}" onerror="this.style.display='none'">
+            <div class="csa-reps-info">
+              <div class="csa-reps-count">${activeExercise.reps}</div>
+              <div class="csa-reps-label">Repetições</div>
+            </div>
+            <div class="csa-set-indicators">
+              ${Array.from({length: activeExercise.sets}, (_, i) => {
+                const setDone = i < currentSet;
+                const setDoing = i === currentSet;
+                return `<div class="csa-set-dot ${setDone ? 'done' : ''} ${setDoing ? 'active' : ''}">${setDone ? '✓' : (i + 1)}</div>`;
+              }).join('')}
+            </div>
           </div>
-          <img class="csa-exercise-image" src="${gif}" alt="${activeExercise.name}" onerror="this.style.display='none'">
-          <div class="csa-reps-info">
-            <div class="csa-reps-count">${activeExercise.reps}</div>
-            <div class="csa-reps-label">Repetições</div>
+          <div class="csa-rest-timer">
+            <div class="csa-rest-circle">
+              <svg viewBox="0 0 200 200">
+                <circle class="csa-rest-track" cx="100" cy="100" r="90"/>
+                <circle class="csa-rest-progress" cx="100" cy="100" r="90"
+                  stroke-dasharray="${circumference}"
+                  stroke-dashoffset="${offset}"/>
+              </svg>
+              <div class="csa-rest-text">${formatTime(timer)}</div>
+            </div>
+            <div class="csa-rest-hint">Prepare-se para a próxima série</div>
           </div>
-          <div class="csa-set-indicators">
-            ${Array.from({length: activeExercise.sets}, (_, i) => {
-              const setDone = i < currentSet;
-              const setDoing = i === currentSet;
-              return `<div class="csa-set-dot ${setDone ? 'done' : ''} ${setDoing ? 'active' : ''}">${setDone ? '✓' : (i + 1)}</div>`;
-            }).join('')}
-          </div>
-        </div>
-        <div class="csa-rest-timer">
-          <div class="csa-rest-circle">
-            <svg viewBox="0 0 200 200">
-              <circle class="csa-rest-track" cx="100" cy="100" r="90"/>
-              <circle class="csa-rest-progress" cx="100" cy="100" r="90"
-                stroke-dasharray="${circumference}"
-                stroke-dashoffset="${offset}"/>
-            </svg>
-            <div class="csa-rest-text">${formatTime(timer)}</div>
-          </div>
-          <div class="csa-rest-hint">Prepare-se para a próxima série</div>
         </div>
         <div class="csa-bottom-nav">
           <button class="csa-nav-arrow" onclick="cancelTimer()">←</button>
@@ -1231,37 +1236,39 @@ function renderActiveExercise() {
           <div class="csa-title">Execução</div>
           <div class="csa-timer" id="workout-duration">${exerciseElapsed}</div>
         </div>
-        <div class="csa-card">
-          <div class="csa-exercise-name">${activeExercise.name}</div>
-          ${activeExercise.muscle ? `<div class="csa-muscle-badge">${activeExercise.muscle}</div>` : ''}
-          <div class="csa-stats-row">
-            <span>Séries: ${activeExercise.sets}</span>
-            <span>Descanso: ${REST_TIME}s</span>
-          </div>
-          <img class="csa-exercise-image" src="${gif}" alt="${activeExercise.name}" onerror="this.style.display='none'">
-          <div class="csa-reps-info">
-            <div class="csa-reps-count">${activeExercise.reps}</div>
-            <div class="csa-reps-label">Repetições</div>
-          </div>
-          <div class="csa-set-indicators">
-            ${Array.from({length: activeExercise.sets}, (_, i) => {
-              const setDone = i < currentSet;
-              const setDoing = i === currentSet;
-              return `<div class="csa-set-dot ${setDone ? 'done' : ''} ${setDoing ? 'active' : ''}">${setDone ? '✓' : (i + 1)}</div>`;
-            }).join('')}
-          </div>
-          <div class="csa-weight-section">
-            <div class="csa-weight-label">Carga</div>
-            <div class="csa-weight-row">
-              <button class="csa-weight-btn" onclick="adjustWeight(-2.5)">−</button>
-              <input type="number" class="csa-weight-field" id="weightInput" value="${currentWeight}" placeholder="0" step="0.5" min="0" onchange="updateWeight(this.value)" oninput="updateWeight(this.value)">
-              <button class="csa-weight-btn" onclick="adjustWeight(2.5)">+</button>
-              <span class="csa-weight-unit">kg</span>
+        <div class="csa-scroll-content">
+          <div class="csa-card">
+            <div class="csa-exercise-name">${activeExercise.name}</div>
+            ${activeExercise.muscle ? `<div class="csa-muscle-badge">${activeExercise.muscle}</div>` : ''}
+            <div class="csa-stats-row">
+              <span>Séries: ${activeExercise.sets}</span>
+              <span>Descanso: ${REST_TIME}s</span>
+            </div>
+            <img class="csa-exercise-image" src="${gif}" alt="${activeExercise.name}" onerror="this.style.display='none'">
+            <div class="csa-reps-info">
+              <div class="csa-reps-count">${activeExercise.reps}</div>
+              <div class="csa-reps-label">Repetições</div>
+            </div>
+            <div class="csa-set-indicators">
+              ${Array.from({length: activeExercise.sets}, (_, i) => {
+                const setDone = i < currentSet;
+                const setDoing = i === currentSet;
+                return `<div class="csa-set-dot ${setDone ? 'done' : ''} ${setDoing ? 'active' : ''}">${setDone ? '✓' : (i + 1)}</div>`;
+              }).join('')}
+            </div>
+            <div class="csa-weight-section">
+              <div class="csa-weight-label">Carga</div>
+              <div class="csa-weight-row">
+                <button class="csa-weight-btn" onclick="adjustWeight(-2.5)">−</button>
+                <input type="number" class="csa-weight-field" id="weightInput" value="${currentWeight}" placeholder="0" step="0.5" min="0" onchange="updateWeight(this.value)" oninput="updateWeight(this.value)">
+                <button class="csa-weight-btn" onclick="adjustWeight(2.5)">+</button>
+                <span class="csa-weight-unit">kg</span>
+              </div>
             </div>
           </div>
+          ${activeExercise.tips ? `<div class="csa-tips">💡 ${activeExercise.tips}</div>` : ''}
+          <button class="csa-settings-btn" onclick="showRestTimeSettings()">⚙️ Alterar descanso</button>
         </div>
-        ${activeExercise.tips ? `<div class="csa-tips">💡 ${activeExercise.tips}</div>` : ''}
-        <button class="csa-settings-btn" onclick="showRestTimeSettings()">⚙️ Alterar descanso</button>
         <div class="csa-bottom-nav">
           <button class="csa-nav-arrow" onclick="cancelExercise()">←</button>
           <button class="csa-check-btn" onclick="completeSet()">
