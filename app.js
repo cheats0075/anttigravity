@@ -1947,8 +1947,9 @@ function renderBuilderMultiPicker() {
   const cardsHtml = displayItems.map(ex => {
     const gif = getExerciseGifPath(ex);
     const checked = builderMultiPick.includes(ex.id);
+    const idArg = typeof ex.id === 'string' ? "'" + ex.id + "'" : ex.id;
     return `
-      <div class="library-card ${checked ? 'picked' : ''}" data-ex-id="${ex.id}" onclick="toggleBuilderPick(${ex.id})" style="position:relative;">
+      <div class="library-card ${checked ? 'picked' : ''}" data-ex-id="${ex.id}" onclick="toggleBuilderPick(${idArg})" style="position:relative;">
         <div class="builder-pick-check">${checked ? '✓' : ''}</div>
         <img class="library-card-gif" src="${gif}" alt="${ex.name}" onerror="this.style.display='none'" loading="lazy">
         <div class="library-card-name">${ex.name}</div>
@@ -2044,8 +2045,9 @@ function updateBuilderMultiResults() {
   const cardsHtml = displayItems.map(ex => {
     const gif = getExerciseGifPath(ex);
     const checked = builderMultiPick.includes(ex.id);
+    const idArg = typeof ex.id === 'string' ? "'" + ex.id + "'" : ex.id;
     return `
-      <div class="library-card ${checked ? 'picked' : ''}" data-ex-id="${ex.id}" onclick="toggleBuilderPick(${ex.id})" style="position:relative;">
+      <div class="library-card ${checked ? 'picked' : ''}" data-ex-id="${ex.id}" onclick="toggleBuilderPick(${idArg})" style="position:relative;">
         <div class="builder-pick-check">${checked ? '✓' : ''}</div>
         <img class="library-card-gif" src="${gif}" alt="${ex.name}" onerror="this.style.display='none'" loading="lazy">
         <div class="library-card-name">${ex.name}</div>
