@@ -253,16 +253,68 @@ function renderLogin() {
   currentView = 'login';
   app.innerHTML = `
     <div class="screen login-screen">
-      <div class="login-logo">ANTIGRAVITY</div>
-      <div class="login-subtitle">Acesse sua conta</div>
+      <div class="login-deco-circle login-deco-tl"></div>
+      <div class="login-deco-circle login-deco-br"></div>
+      <div class="login-deco-dots login-deco-dots-tr"></div>
+      <div class="login-deco-dots login-deco-dots-bl"></div>
+      <div class="login-logo-area">
+        <svg class="login-logo-icon" viewBox="0 0 200 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="100" cy="22" r="14" fill="#A3E635"/>
+          <path d="M72 50 L100 90 L128 50" stroke="#A3E635" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <rect x="18" y="58" width="36" height="12" rx="6" fill="#A3E635"/>
+          <rect x="6" y="48" width="18" height="32" rx="6" fill="#A3E635"/>
+          <rect x="146" y="58" width="36" height="12" rx="6" fill="#A3E635"/>
+          <rect x="176" y="48" width="18" height="32" rx="6" fill="#A3E635"/>
+        </svg>
+        <div class="login-logo-text">Ant<span class="login-logo-accent">t</span>igravity</div>
+      </div>
+      <h1 class="login-title">Login</h1>
+      <div class="login-title-line"></div>
       <form onsubmit="handleLogin(event)" class="login-form">
-        <input class="login-input" type="number" id="login-user" placeholder="Usuário" inputmode="numeric" autocomplete="username" required>
-        <input class="login-input" type="password" id="login-pass" placeholder="Senha" inputmode="numeric" autocomplete="current-password" required>
+        <div class="login-field">
+          <label class="login-label">Usuário</label>
+          <div class="login-input-wrap">
+            <div class="login-input-icon">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="5" cy="5" r="3" fill="#A3E635"/><circle cx="13" cy="5" r="3" fill="#A3E635"/><circle cx="5" cy="13" r="3" fill="#A3E635"/><circle cx="13" cy="13" r="3" fill="#A3E635"/><circle cx="5" cy="21" r="3" fill="#A3E635"/><circle cx="13" cy="21" r="3" fill="#A3E635"/></svg>
+            </div>
+            <input class="login-input" type="number" id="login-user" placeholder="Digite seu número" inputmode="numeric" autocomplete="username" required>
+          </div>
+          <span class="login-hint">Apenas números</span>
+        </div>
+        <div class="login-field">
+          <label class="login-label">Senha</label>
+          <div class="login-input-wrap">
+            <div class="login-input-icon">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="5" cy="5" r="3" fill="#A3E635"/><circle cx="13" cy="5" r="3" fill="#A3E635"/><circle cx="5" cy="13" r="3" fill="#A3E635"/><circle cx="13" cy="13" r="3" fill="#A3E635"/><circle cx="5" cy="21" r="3" fill="#A3E635"/><circle cx="13" cy="21" r="3" fill="#A3E635"/></svg>
+            </div>
+            <input class="login-input" type="password" id="login-pass" placeholder="••••••" inputmode="numeric" autocomplete="current-password" required>
+            <button type="button" class="login-eye-btn" onclick="toggleLoginPass()">
+              <svg class="eye-open" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#A3E635" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="eye-closed" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#A3E635" stroke-width="2" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            </button>
+          </div>
+          <span class="login-hint">Apenas números</span>
+        </div>
         <button class="login-btn" type="submit">Entrar</button>
       </form>
       <div id="login-error" class="login-error" style="display:none;">Usuário ou senha inválidos</div>
     </div>
   `;
+}
+
+function toggleLoginPass() {
+  const passInput = document.getElementById('login-pass');
+  const eyeOpen = document.querySelector('.eye-open');
+  const eyeClosed = document.querySelector('.eye-closed');
+  if (passInput.type === 'password') {
+    passInput.type = 'text';
+    eyeOpen.style.display = 'none';
+    eyeClosed.style.display = 'block';
+  } else {
+    passInput.type = 'password';
+    eyeOpen.style.display = 'block';
+    eyeClosed.style.display = 'none';
+  }
 }
 
 async function handleLogin(e) {
@@ -690,11 +742,14 @@ function renderHome() {
       ${renderTabBar()}
       <div class="screen home-user">
         <div class="user-home-topbar">
-          <div class="user-home-name-top">${currentUserName}</div>
-          <button class="user-header-logout" onclick="doLogout()">Sair</button>
+          <div class="user-home-name-top">Olá, ${currentUserName}</div>
+          <button class="user-header-logout" onclick="doLogout()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Sair
+          </button>
         </div>
         <div class="home-title">ANTIGRAVITY</div>
-        <button class="home-btn today-btn" onclick="selectGender('${userGender}')">INICIAR</button>
+        <button class="home-btn iniciar-btn" onclick="selectGender('${userGender}')">INICIAR</button>
       </div>
     `;
     return;
@@ -745,21 +800,29 @@ function renderHome() {
     <div class="screen home">
       <div class="home-title">ANTIGRAVITY</div>
       <div class="home-subtitle">Escolha seu treino</div>
-      ${currentUserId ? `<div class="home-user-badge">${currentUserIsAdmin ? '👑' : '👤'} ${currentUserName} — Login: ${currentUserId} <span class="logout-link" onclick="doLogout()">sair</span></div>` : ''}
-      ${adminTodayBtn}
-      ${!currentUserIsAdmin ? `
-        <button class="home-btn" onclick="selectGender('homem')">HOMEM</button>
-        <button class="home-btn female" onclick="selectGender('mulher')">MULHER</button>
-      ` : ''}
-      ${statsHtml}
-      ${customSection}
-      ${currentUserIsAdmin ? `
-        <div style="margin-top:24px;">
-          <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:12px;letter-spacing:1px;font-weight:700;">ADMIN</div>
-          <button class="home-btn" style="background:#6c5ce7;font-size:0.85rem;" onclick="navigate('admin')">⚙️ Painel Admin</button>
-          <button class="home-btn" style="background:#00b894;font-size:0.85rem;margin-top:8px;" onclick="saveAllConfig()">💾 Salvar dados na API</button>
+      ${currentUserId ? `
+        <div class="admin-badge-wrap">
+          <span class="admin-badge">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/></svg>
+            Admin — Login: ${currentUserId}
+          </span>
+          <button class="admin-logout-btn" onclick="doLogout()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Sair
+          </button>
         </div>
       ` : ''}
+      ${adminTodayBtn}
+      <div class="admin-action-btns">
+        <button class="admin-action-btn admin-panel-btn" onclick="navigate('admin')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          Painel Admin
+        </button>
+        <button class="admin-action-btn admin-save-btn" onclick="saveAllConfig()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Salvar dados na API
+        </button>
+      </div>
     </div>
   `;
 }
