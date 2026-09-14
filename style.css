@@ -1295,12 +1295,34 @@ body::after {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  cursor: pointer;
-  transition: color 0.2s;
 }
 
-.daylist-row-workout:hover {
+.daylist-row-workout-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.daylist-edit-title {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: transparent;
   color: #a78bfa;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all var(--transition);
+  opacity: 0.6;
+}
+
+.daylist-edit-title:hover {
+  opacity: 1;
+  background: rgba(139, 92, 246, 0.15);
+  border-color: #a78bfa;
 }
 
 .daylist-row-right {

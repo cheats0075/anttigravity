@@ -903,8 +903,11 @@ function renderDayList() {
           <div class="daylist-row-icon">${dayIcons[idx]}</div>
           <div class="daylist-row-content">
             <div class="daylist-row-day">${WEEK_DAYS_DISPLAY[idx]}</div>
-            <div class="daylist-row-workout" onclick="event.stopPropagation(); ${hasWorkout ? `editWorkoutTitle('${dayWorkout.id}', '${dayWorkout.title.replace(/'/g, "\\'")}')` : ''}">
-              ${hasWorkout ? dayWorkout.title : 'Descanso'}
+            <div class="daylist-row-workout-wrap">
+              <span class="daylist-row-workout">${hasWorkout ? dayWorkout.title : 'Descanso'}</span>
+              ${hasWorkout ? `<button class="daylist-edit-title" onclick="event.stopPropagation(); editWorkoutTitle('${dayWorkout.id}', '${dayWorkout.title.replace(/'/g, "\\'")}')">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>` : ''}
             </div>
           </div>
           <div class="daylist-row-right">
