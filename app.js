@@ -49,6 +49,7 @@ let builderSelectedDay = null;
 let builderMultiPick = [];
 let builderMultiMode = false;
 let builderWorkoutTitle = '';
+let adminSection = 'overview';
 
 let customWorkouts = {};
 let userWorkouts = {};
@@ -2727,57 +2728,29 @@ function setCustomRestTime() {
 function renderAdmin() {
   if (!currentUserIsAdmin) { renderHome(); return; }
   currentView = 'admin';
+  if (!adminSection) adminSection = 'overview';
+  renderAdminShell();
+}
 
+function renderAdminShell() {
   const users = remoteConfig.users || [];
   const editCount = Object.keys(remoteConfig.exerciseEdits || {}).length;
   const activeWorkouts = Object.keys(userWorkouts).length;
 
-  const userRows = users.map(u => `
-    <tr class="admin-table-row">
-      <td>
-        <div class="admin-table-user">
-          <div class="admin-table-avatar ${u.isAdmin ? 'admin' : ''}">${u.isAdmin ? '👑' : u.name.charAt(0).toUpperCase()}</div>
-          <span>${u.name}</span>
-        </div>
-      </td>
-      <td>${u.id}</td>
-      <td><span class="admin-badge ${u.isAdmin ? 'admin' : 'aluno'}">${u.isAdmin ? 'Administrador' : 'Aluno'}</span></td>
-      <td>Hoje</td>
-      <td>
-        <div class="admin-table-actions">
-          <button class="admin-action-edit" onclick="editUser(${u.id}, '${u.name.replace(/'/g, "\\'")}')">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            Editar
-          </button>
-          ${u.id !== 387 ? `<button class="admin-action-delete" onclick="removeUser(${u.id})">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-            Excluir
-          </button>` : ''}
-          <button class="admin-action-view" onclick="viewUserWorkout(${u.id}, '${u.name.replace(/'/g, "\\'")}')">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            Ver treino
-          </button>
-        </div>
-      </td>
-    </tr>
-  `).join('');
+  const menuItems = [
+    { id: 'overview', label: 'Visão geral', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>' },
+    { id: 'admin', label: 'Painel Admin', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>' },
+    { id: 'users', label: 'Usuários', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>' },
+    { id: 'exercises', label: 'Exercícios', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5L17.5 17.5M6.5 17.5L17.5 6.5"/><circle cx="12" cy="12" r="4"/></svg>' },
+    { id: 'workouts', label: 'Treinos semanais', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>' },
+    { id: 'config', label: 'Configurações', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>' }
+  ];
 
-  const exList = Object.entries(remoteConfig.exerciseEdits || {}).slice(0, 20).map(([id, edit]) => `
-    <div class="admin-ex-item">
-      <div class="admin-ex-thumb">${id}</div>
-      <div class="admin-ex-info">
-        <div class="admin-ex-name">${edit.name || 'Exercício #' + id}</div>
-        <div class="admin-ex-muscle">${edit.muscle || ''}</div>
-      </div>
-      <div class="admin-ex-actions">
-        <button class="admin-ex-edit-btn" onclick="editExercise(${id})">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        </button>
-        <button class="admin-ex-delete-btn" onclick="deleteExerciseEdit(${id})">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-        </button>
-      </div>
-    </div>
+  const menuHtml = menuItems.map(m => `
+    <a class="admin-menu-item ${adminSection === m.id ? 'active' : ''}" onclick="showAdminSection('${m.id}')">
+      ${m.icon}
+      ${m.label}
+    </a>
   `).join('');
 
   app.innerHTML = `
@@ -2797,30 +2770,7 @@ function renderAdmin() {
         </div>
         <nav class="admin-sidebar-menu">
           <div class="admin-menu-label">MENU</div>
-          <a class="admin-menu-item active" onclick="renderAdmin()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-            Visão geral
-          </a>
-          <a class="admin-menu-item" onclick="renderAdmin()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-            Painel Admin
-          </a>
-          <a class="admin-menu-item" onclick="showAdminSection('users')">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-            Usuários
-          </a>
-          <a class="admin-menu-item" onclick="showAdminSection('exercises')">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5L17.5 17.5M6.5 17.5L17.5 6.5"/><circle cx="12" cy="12" r="4"/></svg>
-            Exercícios
-          </a>
-          <a class="admin-menu-item" onclick="navigate('builder')">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            Treinos semanais
-          </a>
-          <a class="admin-menu-item" onclick="renderAdmin()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-            Configurações
-          </a>
+          ${menuHtml}
         </nav>
         <div class="admin-sidebar-sync">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
@@ -2828,66 +2778,8 @@ function renderAdmin() {
         </div>
       </aside>
 
-      <main class="admin-main">
-        <div class="admin-breadcrumb">Home &gt; Painel Admin</div>
-        <h1 class="admin-main-title">Painel Admin</h1>
-        <p class="admin-main-sub">Gerencie usuários, treinos e exercícios</p>
-
-        <div class="admin-top-actions">
-          <button class="admin-save-api-btn" onclick="saveAllConfig()">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-            Salvar dados na API
-          </button>
-          <button class="admin-new-user-btn" onclick="showAdminSection('newuser')">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Novo usuário
-          </button>
-        </div>
-
-        <div class="admin-stats-row">
-          <div class="admin-stat-card">
-            <div class="admin-stat-icon users">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-            </div>
-            <div class="admin-stat-label">Usuários cadastrados</div>
-            <div class="admin-stat-value">${users.length}</div>
-          </div>
-          <div class="admin-stat-card">
-            <div class="admin-stat-icon exercises">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5L17.5 17.5M6.5 17.5L17.5 6.5"/><circle cx="12" cy="12" r="4"/></svg>
-            </div>
-            <div class="admin-stat-label">Exercícios editados</div>
-            <div class="admin-stat-value">${editCount}</div>
-          </div>
-          <div class="admin-stat-card">
-            <div class="admin-stat-icon workouts">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            </div>
-            <div class="admin-stat-label">Treinos ativos</div>
-            <div class="admin-stat-value">${activeWorkouts}</div>
-          </div>
-        </div>
-
-        <div class="admin-table-section">
-          <h2 class="admin-section-heading">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-            Usuários cadastrados
-          </h2>
-          <div class="admin-table-wrap">
-            <table class="admin-table">
-              <thead>
-                <tr>
-                  <th>Usuário</th>
-                  <th>Login</th>
-                  <th>Perfil</th>
-                  <th>Último acesso</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody>${userRows}</tbody>
-            </table>
-          </div>
-        </div>
+      <main class="admin-main" id="admin-main-content">
+        ${renderAdminContent()}
       </main>
 
       <aside class="admin-right-panel">
@@ -2898,73 +2790,467 @@ function renderAdmin() {
           </h3>
           <div class="admin-right-form">
             <div class="admin-right-field">
-              <label>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                Login (número)
-              </label>
+              <label><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Login (número)</label>
               <input type="number" id="new-user-id" placeholder="#" inputmode="numeric">
             </div>
             <div class="admin-right-field">
-              <label>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-                Senha
-              </label>
+              <label><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Senha</label>
               <input type="password" id="new-user-pass" placeholder="••••" inputmode="numeric">
             </div>
             <div class="admin-right-field">
-              <label>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                Nome do aluno
-              </label>
+              <label><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Nome do aluno</label>
               <input type="text" id="new-user-name" placeholder="Nome">
             </div>
             <div class="admin-right-field">
-              <label>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                Sexo
-              </label>
-              <select id="new-user-gender">
-                <option value="homem">Homem</option>
-                <option value="mulher">Mulher</option>
-              </select>
+              <label><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Sexo</label>
+              <select id="new-user-gender"><option value="homem">Homem</option><option value="mulher">Mulher</option></select>
             </div>
             <button class="admin-right-create-btn" onclick="createUser()">+ Criar usuário</button>
           </div>
         </div>
-
         <div class="admin-right-section">
           <h3 class="admin-right-title">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5L17.5 17.5M6.5 17.5L17.5 6.5"/><circle cx="12" cy="12" r="4"/></svg>
             Exercícios editados (${editCount})
           </h3>
-          <div class="admin-right-search">
-            <input type="text" id="admin-ex-search" placeholder="Buscar exercício por nome ou ID..." oninput="filterAdminExercises()">
-          </div>
-          <div id="admin-exercise-list" class="admin-right-ex-list">${exList}</div>
-          <a class="admin-right-link" onclick="navigate('library')">Ver todos os exercícios →</a>
+          <div class="admin-right-search"><input type="text" id="admin-ex-search" placeholder="Buscar exercício..." oninput="filterAdminExercises()"></div>
+          <div id="admin-exercise-list" class="admin-right-ex-list"></div>
+          <a class="admin-right-link" onclick="showAdminSection('exercises')">Ver todos os exercícios →</a>
         </div>
       </aside>
     </div>
   `;
+  filterAdminExercises();
 }
 
-function viewUserWorkout(userId, userName) {
-  builderTargetUserId = userId;
-  builderTargetUser = remoteConfig.users.find(u => u.id === userId);
+function renderAdminContent() {
+  const users = remoteConfig.users || [];
+  const editCount = Object.keys(remoteConfig.exerciseEdits || {}).length;
+  const activeWorkouts = Object.keys(userWorkouts).length;
+
+  switch (adminSection) {
+    case 'workouts': return renderAdminWorkouts();
+    case 'builder': return renderAdminBuilderContent();
+    case 'users': return renderAdminUsers();
+    case 'exercises': return renderAdminExercises();
+    case 'config': return renderAdminConfig();
+    default: return renderAdminOverview();
+  }
+}
+
+function renderAdminOverview() {
+  const users = remoteConfig.users || [];
+  const editCount = Object.keys(remoteConfig.exerciseEdits || {}).length;
+  const activeWorkouts = Object.keys(userWorkouts).length;
+
+  const userRows = users.map(u => `
+    <tr class="admin-table-row">
+      <td><div class="admin-table-user"><div class="admin-table-avatar ${u.isAdmin ? 'admin' : ''}">${u.isAdmin ? '👑' : u.name.charAt(0).toUpperCase()}</div><span>${u.name}</span></div></td>
+      <td>${u.id}</td>
+      <td><span class="admin-badge ${u.isAdmin ? 'admin' : 'aluno'}">${u.isAdmin ? 'Administrador' : 'Aluno'}</span></td>
+      <td>Hoje</td>
+      <td><div class="admin-table-actions">
+        <button class="admin-action-edit" onclick="editUser(${u.id}, '${u.name.replace(/'/g, "\\'")}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Editar</button>
+        ${u.id !== 387 ? `<button class="admin-action-delete" onclick="removeUser(${u.id})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg> Excluir</button>` : ''}
+        <button class="admin-action-view" onclick="viewUserWorkout(${u.id})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Ver treino</button>
+      </div></td>
+    </tr>
+  `).join('');
+
+  return `
+    <div class="admin-breadcrumb">Home &gt; Painel Admin</div>
+    <h1 class="admin-main-title">Painel Admin</h1>
+    <p class="admin-main-sub">Gerencie usuários, treinos e exercícios</p>
+    <div class="admin-top-actions">
+      <button class="admin-save-api-btn" onclick="saveAllConfig()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Salvar dados na API</button>
+      <button class="admin-new-user-btn" onclick="showAdminSection('users')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Novo usuário</button>
+    </div>
+    <div class="admin-stats-row">
+      <div class="admin-stat-card"><div class="admin-stat-icon users"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div class="admin-stat-label">Usuários cadastrados</div><div class="admin-stat-value">${users.length}</div></div>
+      <div class="admin-stat-card"><div class="admin-stat-icon exercises"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5L17.5 17.5M6.5 17.5L17.5 6.5"/><circle cx="12" cy="12" r="4"/></svg></div><div class="admin-stat-label">Exercícios editados</div><div class="admin-stat-value">${editCount}</div></div>
+      <div class="admin-stat-card"><div class="admin-stat-icon workouts"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><div class="admin-stat-label">Treinos ativos</div><div class="admin-stat-value">${activeWorkouts}</div></div>
+    </div>
+    <div class="admin-table-section">
+      <h2 class="admin-section-heading"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg> Usuários cadastrados</h2>
+      <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Usuário</th><th>Login</th><th>Perfil</th><th>Último acesso</th><th>Ações</th></tr></thead><tbody>${userRows}</tbody></table></div>
+    </div>
+  `;
+}
+
+function renderAdminUsers() {
+  const users = remoteConfig.users || [];
+  const userRows = users.map(u => `
+    <tr class="admin-table-row">
+      <td><div class="admin-table-user"><div class="admin-table-avatar ${u.isAdmin ? 'admin' : ''}">${u.isAdmin ? '👑' : u.name.charAt(0).toUpperCase()}</div><span>${u.name}</span></div></td>
+      <td>${u.id}</td>
+      <td><span class="admin-badge ${u.isAdmin ? 'admin' : 'aluno'}">${u.isAdmin ? 'Administrador' : 'Aluno'}</span></td>
+      <td>Hoje</td>
+      <td><div class="admin-table-actions">
+        <button class="admin-action-edit" onclick="editUser(${u.id}, '${u.name.replace(/'/g, "\\'")}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Editar</button>
+        ${u.id !== 387 ? `<button class="admin-action-delete" onclick="removeUser(${u.id})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg> Excluir</button>` : ''}
+        <button class="admin-action-view" onclick="viewUserWorkout(${u.id})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Ver treino</button>
+      </div></td>
+    </tr>
+  `).join('');
+
+  return `
+    <div class="admin-breadcrumb">Home &gt; Painel Admin &gt; Usuários</div>
+    <h1 class="admin-main-title">Usuários</h1>
+    <p class="admin-main-sub">Gerencie os usuários cadastrados</p>
+    <div class="admin-table-section">
+      <h2 class="admin-section-heading"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg> Todos os usuários (${users.length})</h2>
+      <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Usuário</th><th>Login</th><th>Perfil</th><th>Último acesso</th><th>Ações</th></tr></thead><tbody>${userRows}</tbody></table></div>
+    </div>
+  `;
+}
+
+function renderAdminExercises() {
+  const db = typeof EXERCISES_DB !== 'undefined' ? EXERCISES_DB : [];
+  const MUSCLES = ["Todos","Abdome","Antebraço","Bíceps","Corpo","Costas","Glúteo","Membros Superiores","Membros Inferiores","Ombro","Peito","Perna","Tríceps"];
+  const exList = db.slice(0, 50).map(ex => {
+    const edit = remoteConfig.exerciseEdits[String(ex.id)] || {};
+    const displayName = edit.name || ex.name;
+    const displayMuscle = edit.muscle || ex.muscle;
+    return `
+      <div class="admin-ex-item">
+        <div class="admin-ex-thumb">${ex.id}</div>
+        <div class="admin-ex-info"><div class="admin-ex-name">${displayName}</div><div class="admin-ex-muscle">${displayMuscle}</div></div>
+        <div class="admin-ex-actions">
+          <button class="admin-ex-edit-btn" onclick="editExercise(${ex.id})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+          <button class="admin-ex-delete-btn" onclick="deleteExerciseEdit(${ex.id})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div class="admin-breadcrumb">Home &gt; Painel Admin &gt; Exercícios</div>
+    <h1 class="admin-main-title">Exercícios</h1>
+    <p class="admin-main-sub">Edite nomes e grupos musculares dos exercícios</p>
+    <div class="admin-right-search" style="margin-bottom:16px;"><input type="text" id="admin-ex-search-full" placeholder="Buscar exercício por nome ou ID..." oninput="filterAdminExercisesFull()"></div>
+    <div id="admin-exercise-list-full" class="admin-right-ex-list" style="max-height:none;">${exList}</div>
+  `;
+}
+
+function renderAdminWorkouts() {
+  if (!builderTargetUser) {
+    return `
+      <div class="admin-breadcrumb">Home &gt; Painel Admin &gt; Treinos semanais</div>
+      <h1 class="admin-main-title">Treinos semanais</h1>
+      <p class="admin-main-sub">Selecione um aluno para gerenciar seus treinos</p>
+      <div class="admin-builder-search">
+        <label>Número do aluno</label>
+        <div style="display:flex;gap:8px;">
+          <input type="number" id="admin-builder-search-id" placeholder="Digite o número" inputmode="numeric" style="flex:1;padding:12px;border-radius:10px;border:1px solid rgba(139,92,246,0.2);background:rgba(5,5,16,0.6);color:#fff;font-size:0.95rem;outline:none;font-family:'Inter',sans-serif;">
+          <button class="admin-right-create-btn" style="width:auto;padding:12px 24px;" onclick="adminSearchUser()">Buscar</button>
+        </div>
+      </div>
+    `;
+  }
+  return renderAdminBuilderContent();
+}
+
+function adminSearchUser() {
+  const uid = parseInt(document.getElementById('admin-builder-search-id')?.value, 10);
+  if (!uid) return;
+  const user = (remoteConfig.users || []).find(u => u.id === uid);
+  if (!user) { alert('Usuário não encontrado'); return; }
+  builderTargetUserId = uid;
+  builderTargetUser = user;
   builderSelectedDay = null;
   builderWorkoutTitle = '';
-  navigate('builder');
+  adminSection = 'workouts';
+  renderAdminShell();
+}
+
+function renderAdminBuilderContent() {
+  if (builderMultiMode) {
+    return renderAdminMultiPicker();
+  }
+  if (builderSelectedDay) {
+    return renderAdminDayExercises();
+  }
+  return renderAdminUserDays();
+}
+
+function renderAdminUserDays() {
+  const user = builderTargetUser;
+  if (!user) { adminSection = 'workouts'; renderAdminShell(); return ''; }
+
+  const userDays = userWorkouts[user.id] || [];
+  const todayIdx = getTodayIndex();
+
+  const dayIcons = [
+    `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M12 4v16M2 12h20"/></svg>`,
+    `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.5"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/></svg>`,
+    `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.5"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>`,
+    `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>`,
+    `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.5"><path d="M6.5 6.5L17.5 17.5M6.5 17.5L17.5 6.5"/><circle cx="12" cy="12" r="4"/></svg>`,
+    `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.5"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>`,
+    `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.5"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>`
+  ];
+
+  const WEEK_DAYS_DISPLAY = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+
+  const dayRows = WEEK_DAYS_DISPLAY.map((dayName, idx) => {
+    const dayIndex = (idx + 1) % 7;
+    const dayWorkout = userDays.find(d => d.dayIndex === dayIndex);
+    const isToday = dayIndex === todayIdx;
+    const hasWorkout = dayWorkout && dayWorkout.exercises && dayWorkout.exercises.length > 0;
+
+    return `
+      <div class="daylist-row ${isToday ? 'today' : ''} ${!hasWorkout ? 'rest' : ''}" onclick="${hasWorkout ? `adminSelectDay(${dayIndex}, '${dayName}')` : `adminSelectDay(${dayIndex}, '${dayName}')`}">
+        <div class="daylist-row-icon">${dayIcons[idx]}</div>
+        <div class="daylist-row-content">
+          <div class="daylist-row-day">${dayName}</div>
+          <div class="daylist-row-workout-wrap">
+            <span class="daylist-row-workout">${hasWorkout ? dayWorkout.title : 'Sem treino'}</span>
+          </div>
+        </div>
+        <div class="daylist-row-right">
+          ${hasWorkout ? `<span class="daylist-row-count">${dayWorkout.exercises.length} ex.</span>` : `<span class="daylist-row-count" style="background:rgba(248,113,113,0.1);color:#f87171;">Vazio</span>`}
+          ${isToday ? '<span class="daylist-today-badge">HOJE</span>' : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div class="admin-breadcrumb">Home &gt; Painel Admin &gt; Treinos semanais</div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+      <button class="daylist-back" onclick="builderTargetUser=null;builderSelectedDay=null;adminSection='workouts';renderAdminShell();">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Voltar
+      </button>
+      <h1 class="admin-main-title" style="margin-bottom:0;">${user.name}</h1>
+    </div>
+    <p class="admin-main-sub">Aluno #${user.id} — ${user.gender === 'mulher' ? 'Mulher' : 'Homem'}</p>
+    <div class="admin-section-heading" style="margin-top:20px;">Dias da semana</div>
+    ${dayRows}
+  `;
+}
+
+function adminSelectDay(dayIndex, dayName) {
+  builderSelectedDay = { dayIndex, dayName };
+  builderWorkoutTitle = '';
+  const userDays = userWorkouts[builderTargetUser.id] || [];
+  const existing = userDays.find(d => d.dayIndex === dayIndex);
+  if (existing && existing.title && existing.title !== dayName) {
+    builderWorkoutTitle = existing.title;
+  }
+  renderAdminShell();
+}
+
+function renderAdminDayExercises() {
+  const user = builderTargetUser;
+  const day = builderSelectedDay;
+  if (!user || !day) { adminSection = 'workouts'; builderSelectedDay = null; renderAdminShell(); return ''; }
+
+  const userDays = userWorkouts[user.id] || [];
+  const dayWorkout = userDays.find(d => d.dayIndex === day.dayIndex);
+  const exercises = dayWorkout && dayWorkout.exercises ? dayWorkout.exercises : [];
+
+  if (!builderWorkoutTitle && dayWorkout && dayWorkout.title) {
+    builderWorkoutTitle = dayWorkout.title === day.dayName ? '' : dayWorkout.title;
+  }
+
+  const exList = exercises.map((ex, i) => {
+    const dbEx = typeof EXERCISES_DB !== 'undefined' ? EXERCISES_DB.find(e => e.id === ex.id || e.name === ex.name) : null;
+    const gif = dbEx ? getExerciseGifPath(dbEx) : '';
+    return `
+      <div class="builder-exercise-item">
+        <img class="exercise-thumb" src="${gif}" alt="${ex.name}" onerror="this.style.display='none'">
+        <div class="builder-exercise-info"><div class="name">${ex.name}</div><div class="muscle">${ex.muscle || ''}</div><div style="font-size:0.7rem;color:var(--text-muted);">${ex.sets}x ${ex.reps}</div></div>
+        <div style="display:flex;gap:6px;">
+          <button class="builder-action-btn swap" onclick="swapBuilderExerciseFromDay(${i})">🔄</button>
+          <button class="builder-action-btn delete" onclick="removeBuilderExerciseFromDayAdmin(${i})">✕</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div class="admin-breadcrumb">Home &gt; Painel Admin &gt; Treinos &gt; ${day.dayName}</div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <button class="daylist-back" onclick="builderSelectedDay=null;renderAdminShell();">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Voltar
+      </button>
+      <h1 class="admin-main-title" style="margin-bottom:0;">${user.name} — ${day.dayName}</h1>
+    </div>
+    <div class="builder-title-field"><label>Nome do Treino</label><input type="text" id="builder-workout-title" value="${builderWorkoutTitle}" placeholder="Ex: Bíceps e Tríceps" oninput="builderWorkoutTitle = this.value"></div>
+    ${exercises.length > 0 ? `
+      <div class="admin-section-heading">Exercícios (${exercises.length})</div>
+      ${exList}
+    ` : `
+      <div style="text-align:center;padding:40px 20px;color:var(--text-muted);">
+        <div style="font-size:3rem;margin-bottom:12px;opacity:0.4;">🏋️</div>
+        <div style="font-size:1rem;font-weight:600;margin-bottom:4px;">Nenhum exercício</div>
+        <div style="font-size:0.85rem;">Adicione exercícios para este dia</div>
+      </div>
+    `}
+    <button class="builder-add-btn" onclick="openAdminMultiPicker()" style="margin-top:16px;">+ Adicionar Treino</button>
+  `;
+}
+
+function openAdminMultiPicker() {
+  builderMultiPick = [];
+  builderMultiMode = true;
+  pickerMode = true;
+  pickerOrigin = 'builder';
+  librarySearchQuery = '';
+  libraryActiveFilter = 'Todos';
+  libraryDisplayCount = 50;
+  renderAdminShell();
+}
+
+function renderAdminMultiPicker() {
+  const db = getExercisesDB();
+  const query = librarySearchQuery.toLowerCase();
+  const filter = libraryActiveFilter;
+  let filtered = db;
+  if (query) filtered = filtered.filter(ex => ex.name.toLowerCase().includes(query) || ex.muscle.toLowerCase().includes(query));
+  if (filter !== 'Todos') filtered = filtered.filter(ex => ex.muscle === filter || ex.category === filter);
+
+  const displayItems = filtered.slice(0, libraryDisplayCount);
+  const MUSCLE_FILTERS = ["Todos","Abdome","Antebraço","Bíceps","Corpo","Costas","Glúteo","Membros Superiores","Membros Inferiores","Ombro","Peito","Perna","Tríceps"];
+
+  const filtersHtml = MUSCLE_FILTERS.map(f =>
+    `<button class="filter-chip ${f === libraryActiveFilter ? 'active' : ''}" onclick="setBuilderMultiFilter('${f}')">${f}</button>`
+  ).join('');
+
+  const cardsHtml = displayItems.map(ex => {
+    const gif = getExerciseGifPath(ex);
+    const checked = builderMultiPick.includes(ex.id);
+    const idArg = typeof ex.id === 'string' ? "'" + ex.id + "'" : ex.id;
+    return `
+      <div class="library-card ${checked ? 'picked' : ''}" data-ex-id="${ex.id}" onclick="toggleBuilderPick(${idArg})" style="position:relative;">
+        <div class="builder-pick-check">${checked ? '✓' : ''}</div>
+        <img class="library-card-gif" src="${gif}" alt="${ex.name}" onerror="this.style.display='none'" loading="lazy">
+        <div class="library-card-name">${ex.name}</div>
+        <div class="library-card-muscle">${ex.muscle}</div>
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <button class="daylist-back" onclick="closeAdminMultiPicker()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Fechar
+      </button>
+      <h1 class="admin-main-title" style="margin-bottom:0;">Selecionar Treinos (${builderMultiPick.length})</h1>
+    </div>
+    <div class="library-search-wrapper"><span class="library-search-icon">🔍</span><input class="library-search" type="text" placeholder="Buscar exercício..." value="${librarySearchQuery}" oninput="onBuilderMultiSearch(this.value)"></div>
+    <div class="filters-container"><button class="filters-arrow filters-arrow-left" onclick="scrollFilters('admin-builder-filters', -1)">‹</button><div id="admin-builder-filters" class="library-filters scroll-x">${filtersHtml}</div><button class="filters-arrow filters-arrow-right" onclick="scrollFilters('admin-builder-filters', 1)">›</button></div>
+    <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:12px;">${filtered.length} exercício(s) encontrado(s) — toque para selecionar</div>
+    <div class="library-grid">${cardsHtml}</div>
+    <div style="height:80px;"></div>
+    <div class="builder-multi-confirm-bar" style="position:sticky;bottom:0;">
+      <button class="builder-confirm-btn" id="builder-confirm-btn" onclick="confirmAdminMultiPick()" ${builderMultiPick.length === 0 ? 'disabled' : ''}>${builderMultiPick.length > 0 ? `✓ Concluir (${builderMultiPick.length})` : 'Selecione exercícios'}</button>
+    </div>
+  `;
+}
+
+function closeAdminMultiPicker() {
+  builderMultiMode = false;
+  builderMultiPick = [];
+  pickerMode = false;
+  renderAdminShell();
+}
+
+function confirmAdminMultiPick() {
+  if (!builderMultiPick.length || !builderTargetUser || !builderSelectedDay) return;
+  const userId = builderTargetUser.id;
+  if (!userWorkouts[userId]) userWorkouts[userId] = [];
+
+  const titleInput = document.getElementById('builder-workout-title');
+  const workoutTitle = (titleInput ? titleInput.value.trim() : '') || builderSelectedDay.dayName;
+
+  let dayWorkout = userWorkouts[userId].find(d => d.dayIndex === builderSelectedDay.dayIndex);
+  if (!dayWorkout) {
+    dayWorkout = { id: `cw_${userId}_${builderSelectedDay.dayIndex}`, day: builderSelectedDay.dayName, dayIndex: builderSelectedDay.dayIndex, title: workoutTitle, restDay: false, exercises: [] };
+    userWorkouts[userId].push(dayWorkout);
+  } else {
+    dayWorkout.title = workoutTitle;
+  }
+
+  const db = getExercisesDB();
+  builderMultiPick.forEach(exId => {
+    const ex = db.find(e => e.id === exId);
+    if (!ex) return;
+    dayWorkout.exercises.push({ id: `custom_${Date.now()}_${ex.id}`, name: ex.name, sets: 3, reps: '10', image: `${ex.gif}.gif`, muscle: ex.muscle, tips: '' });
+  });
+
+  saveUserWorkouts(userId, userWorkouts[userId]);
+  builderMultiPick = [];
+  builderMultiMode = false;
+  closeAdminMultiPicker();
+}
+
+function removeBuilderExerciseFromDayAdmin(index) {
+  const userId = builderTargetUser.id;
+  const userDays = userWorkouts[userId] || [];
+  const dayWorkout = userDays.find(d => d.dayIndex === builderSelectedDay.dayIndex);
+  if (!dayWorkout) return;
+  const exName = dayWorkout.exercises[index]?.name || 'este exercício';
+  if (!confirm(`Remover "${exName}"?`)) return;
+  dayWorkout.exercises.splice(index, 1);
+  if (dayWorkout.exercises.length === 0) {
+    userWorkouts[userId] = userDays.filter(d => d.dayIndex !== builderSelectedDay.dayIndex);
+  }
+  saveUserWorkouts(userId, userWorkouts[userId]);
+  renderAdminShell();
+}
+
+function renderAdminConfig() {
+  return `
+    <div class="admin-breadcrumb">Home &gt; Painel Admin &gt; Configurações</div>
+    <h1 class="admin-main-title">Configurações</h1>
+    <p class="admin-main-sub">Exportar e salvar dados</p>
+    <div style="display:flex;flex-direction:column;gap:12px;max-width:400px;">
+      <button class="admin-save-api-btn" onclick="saveAllConfig()" style="justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg> Salvar tudo na API</button>
+      <button class="admin-save-api-btn" onclick="exportConfig()" style="justify-content:center;">📦 Exportar Config JSON</button>
+    </div>
+  `;
 }
 
 function showAdminSection(section) {
-  renderAdmin();
+  adminSection = section;
+  if (section === 'builder' || section === 'workouts') {
+    adminSection = 'workouts';
+  }
+  renderAdminShell();
+}
+
+function viewUserWorkout(userId) {
+  const user = (remoteConfig.users || []).find(u => u.id === userId);
+  if (!user) return;
+  builderTargetUserId = userId;
+  builderTargetUser = user;
+  builderSelectedDay = null;
+  builderWorkoutTitle = '';
+  adminSection = 'workouts';
+  renderAdminShell();
 }
 
 function deleteExerciseEdit(exId) {
   if (!confirm('Remover edição deste exercício?')) return;
   delete remoteConfig.exerciseEdits[exId];
   saveRemoteConfig();
-  renderAdmin();
+  renderAdminShell();
+}
+
+function filterAdminExercisesFull() {
+  const query = (document.getElementById('admin-ex-search-full')?.value || '').toLowerCase();
+  const db = typeof EXERCISES_DB !== 'undefined' ? EXERCISES_DB : [];
+  let filtered = db;
+  if (query) filtered = filtered.filter(ex => String(ex.id).includes(query) || ex.name.toLowerCase().includes(query) || ex.muscle.toLowerCase().includes(query));
+  const listEl = document.getElementById('admin-exercise-list-full');
+  if (!listEl) return;
+  listEl.innerHTML = filtered.slice(0, 50).map(ex => {
+    const edit = remoteConfig.exerciseEdits[String(ex.id)] || {};
+    const displayName = edit.name || ex.name;
+    const displayMuscle = edit.muscle || ex.muscle;
+    return `<div class="admin-ex-item"><div class="admin-ex-thumb">${ex.id}</div><div class="admin-ex-info"><div class="admin-ex-name">${displayName}</div><div class="admin-ex-muscle">${displayMuscle}</div></div><div class="admin-ex-actions"><button class="admin-ex-edit-btn" onclick="editExercise(${ex.id})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="admin-ex-delete-btn" onclick="deleteExerciseEdit(${ex.id})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button></div></div>`;
+  }).join('');
 }
 
 function filterAdminExercises() {

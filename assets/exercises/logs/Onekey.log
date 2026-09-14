@@ -1,0 +1,6 @@
+[2026-09-07 00:29:01] | [Onekey:INFO] | [main.init:57] - Guikey | Versão: 3.0
+[2026-09-07 00:29:01] | [Onekey:WARNING] | [main.init:58] - Conteudo modificado |https://discord.gg/6VTVKpUzuc
+[2026-09-07 00:29:38] | [Onekey:ERROR] | [main.get_latest_repo_info:175] - Nenhum repositório válido encontrado para o App ID fornecido.
+[2026-09-07 00:29:38] | [Onekey:ERROR] | [main.main_flow:545] - Nenhum dado de depot (chaves de decriptação) foi obtido.
+[2026-09-12 00:27:41] | [Onekey:INFO] | [main.init:57] - Guikey | Versão: 3.0
+[2026-09-12 00:27:41] | [Onekey:WARNING] | [main.init:58] - Conteudo modificado |https://discord.gg/6VTVKpUzuc
