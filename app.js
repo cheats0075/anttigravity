@@ -2620,7 +2620,12 @@ function renderAdmin() {
           <span class="admin-user-login">Login: ${u.id}</span>
         </div>
       </div>
-      ${u.id !== 387 ? `<button class="admin-remove-btn" onclick="removeUser(${u.id})">✕</button>` : ''}
+      <div class="admin-user-actions">
+        ${u.id !== 387 ? `<button class="admin-edit-btn" onclick="editUser(${u.id}, '${u.name.replace(/'/g, "\\'")}')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>` : ''}
+        ${u.id !== 387 ? `<button class="admin-remove-btn" onclick="removeUser(${u.id})">✕</button>` : ''}
+      </div>
     </div>
   `).join('');
 
@@ -2763,6 +2768,75 @@ async function removeUser(userId) {
   remoteConfig.users = remoteConfig.users.filter(u => u.id !== userId);
   saveRemoteConfig();
   renderAdmin();
+}
+
+function editUser(userId, userName) {
+  const modal = document.createElement('div');
+  modal.className = 'edit-modal-overlay';
+  modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+  modal.innerHTML = `
+    <div class="edit-modal">
+      <div class="edit-modal-header">
+        <h3>Editar Senha</h3>
+        <button class="edit-modal-close" onclick="this.closest('.edit-modal-overlay').remove()">✕</button>
+      </div>
+      <div class="edit-modal-body">
+        <div class="edit-modal-user">
+          <span class="edit-modal-user-icon">👤</span>
+          <div>
+            <strong>${userName}</strong>
+            <span>Login: ${userId}</span>
+          </div>
+        </div>
+        <div class="edit-modal-field">
+          <label>Nova Senha</label>
+          <input type="password" id="edit-new-pass" placeholder="Digite a nova senha" inputmode="numeric">
+        </div>
+        <div class="edit-modal-field">
+          <label>Confirmar Senha</label>
+          <input type="password" id="edit-confirm-pass" placeholder="Confirme a senha" inputmode="numeric">
+        </div>
+        <div id="edit-pass-error" class="edit-pass-error" style="display:none;">As senhas não coincidem</div>
+        <button class="edit-modal-save" onclick="saveUserPassword(${userId})">Salvar Senha</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+async function saveUserPassword(userId) {
+  const newPass = document.getElementById('edit-new-pass').value;
+  const confirmPass = document.getElementById('edit-confirm-pass').value;
+  const errorEl = document.getElementById('edit-pass-error');
+
+  if (!newPass || newPass.length < 3) {
+    errorEl.textContent = 'A senha deve ter pelo menos 3 dígitos';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  if (newPass !== confirmPass) {
+    errorEl.textContent = 'As senhas não coincidem';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  errorEl.style.display = 'none';
+
+  if (authToken) {
+    const result = await apiPut(`/users/${userId}`, { password: newPass });
+    if (result.error) {
+      errorEl.textContent = 'Erro ao salvar: ' + result.error;
+      errorEl.style.display = 'block';
+      return;
+    }
+  } else {
+    const user = remoteConfig.users.find(u => u.id === userId);
+    if (user) user.password = newPass;
+  }
+
+  document.querySelector('.edit-modal-overlay').remove();
+  alert('Senha alterada com sucesso!');
 }
 
 function exportConfig() {
