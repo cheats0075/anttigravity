@@ -3160,8 +3160,7 @@ function confirmAdminMultiPick() {
   const userId = builderTargetUser.id;
   if (!userWorkouts[userId]) userWorkouts[userId] = [];
 
-  const titleInput = document.getElementById('builder-workout-title');
-  const workoutTitle = (titleInput ? titleInput.value.trim() : '') || builderSelectedDay.dayName;
+  const workoutTitle = builderWorkoutTitle || builderSelectedDay.dayName;
 
   let dayWorkout = userWorkouts[userId].find(d => d.dayIndex === builderSelectedDay.dayIndex);
   if (!dayWorkout) {
