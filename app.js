@@ -3143,10 +3143,10 @@ function renderAdminMultiPicker() {
       <h1 class="admin-main-title" style="margin-bottom:0;">Selecionar Treinos (${builderMultiPick.length})</h1>
     </div>
     <div class="library-search-wrapper"><span class="library-search-icon">🔍</span><input class="library-search" type="text" placeholder="Buscar exercício..." value="${librarySearchQuery}" oninput="onBuilderMultiSearch(this.value)"></div>
-    <div class="filters-container"><button class="filters-arrow filters-arrow-left" onclick="scrollFilters('admin-builder-filters', -1)">‹</button><div id="admin-builder-filters" class="library-filters scroll-x">${filtersHtml}</div><button class="filters-arrow filters-arrow-right" onclick="scrollFilters('admin-builder-filters', 1)">›</button></div>
-    <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:12px;">${filtered.length} exercício(s) encontrado(s) — toque para selecionar</div>
-    <div class="library-grid">${cardsHtml}</div>
-    <div style="height:80px;"></div>
+    <div class="filters-container"><button class="filters-arrow filters-arrow-left" onclick="scrollFilters('builder-filters', -1)">‹</button><div id="builder-filters" class="library-filters scroll-x">${filtersHtml}</div><button class="filters-arrow filters-arrow-right" onclick="scrollFilters('builder-filters', 1)">›</button></div>
+    <div id="builder-count" style="font-size:0.7rem;color:var(--text-muted);margin-bottom:12px;">${filtered.length} exercício(s) encontrado(s) — toque para selecionar</div>
+    <div id="builder-grid" class="library-grid">${cardsHtml}</div>
+    <div id="builder-load-more" style="display:none;text-align:center;padding:16px;"><button class="btn-secondary" onclick="loadMoreBuilderMulti()">Carregar mais</button></div>
     <div class="builder-multi-confirm-bar">
       <button class="builder-confirm-btn" id="builder-confirm-btn" onclick="confirmAdminMultiPick()" ${builderMultiPick.length === 0 ? 'disabled' : ''}>${builderMultiPick.length > 0 ? `✓ Concluir (${builderMultiPick.length})` : 'Selecione exercícios'}</button>
     </div>
