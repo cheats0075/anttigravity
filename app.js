@@ -329,12 +329,20 @@ async function handleLogin(e) {
 
   if (await doLogin(userId, pass)) {
     history.replaceState({ view: 'home' }, '', '#/');
-    renderHome();
+    if (currentUserIsAdmin) {
+      renderAdmin();
+    } else {
+      renderHome();
+    }
     loadRemoteConfig().then(async () => {
       await loadWorkouts();
       await loadUserWorkouts(currentUserId);
       apiLoaded = true;
-      renderHome();
+      if (currentUserIsAdmin) {
+        renderAdmin();
+      } else {
+        renderHome();
+      }
     });
   } else {
     if (btn) { btn.textContent = 'Entrar'; btn.disabled = false; }
@@ -2720,78 +2728,243 @@ function renderAdmin() {
   if (!currentUserIsAdmin) { renderHome(); return; }
   currentView = 'admin';
 
-  const usersHtml = remoteConfig.users.map(u => `
-    <div class="admin-user-row">
-      <div class="admin-user-info">
-        <span class="admin-user-icon">${u.isAdmin ? '👑' : '👤'}</span>
-        <div class="admin-user-details">
-          <strong>${u.name}</strong>
-          <span class="admin-user-login">Login: ${u.id}</span>
+  const users = remoteConfig.users || [];
+  const editCount = Object.keys(remoteConfig.exerciseEdits || {}).length;
+  const activeWorkouts = Object.keys(userWorkouts).length;
+
+  const userRows = users.map(u => `
+    <tr class="admin-table-row">
+      <td>
+        <div class="admin-table-user">
+          <div class="admin-table-avatar ${u.isAdmin ? 'admin' : ''}">${u.isAdmin ? '👑' : u.name.charAt(0).toUpperCase()}</div>
+          <span>${u.name}</span>
         </div>
+      </td>
+      <td>${u.id}</td>
+      <td><span class="admin-badge ${u.isAdmin ? 'admin' : 'aluno'}">${u.isAdmin ? 'Administrador' : 'Aluno'}</span></td>
+      <td>Hoje</td>
+      <td>
+        <div class="admin-table-actions">
+          <button class="admin-action-edit" onclick="editUser(${u.id}, '${u.name.replace(/'/g, "\\'")}')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Editar
+          </button>
+          ${u.id !== 387 ? `<button class="admin-action-delete" onclick="removeUser(${u.id})">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+            Excluir
+          </button>` : ''}
+          <button class="admin-action-view" onclick="viewUserWorkout(${u.id}, '${u.name.replace(/'/g, "\\'")}')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Ver treino
+          </button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+
+  const exList = Object.entries(remoteConfig.exerciseEdits || {}).slice(0, 20).map(([id, edit]) => `
+    <div class="admin-ex-item">
+      <div class="admin-ex-thumb">${id}</div>
+      <div class="admin-ex-info">
+        <div class="admin-ex-name">${edit.name || 'Exercício #' + id}</div>
+        <div class="admin-ex-muscle">${edit.muscle || ''}</div>
       </div>
-      <div class="admin-user-actions">
-        ${u.id !== 387 ? `<button class="admin-edit-btn" onclick="editUser(${u.id}, '${u.name.replace(/'/g, "\\'")}')">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        </button>` : ''}
-        ${u.id !== 387 ? `<button class="admin-remove-btn" onclick="removeUser(${u.id})">✕</button>` : ''}
+      <div class="admin-ex-actions">
+        <button class="admin-ex-edit-btn" onclick="editExercise(${id})">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="admin-ex-delete-btn" onclick="deleteExerciseEdit(${id})">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+        </button>
       </div>
     </div>
   `).join('');
 
-  const editCount = Object.keys(remoteConfig.exerciseEdits).length;
-
   app.innerHTML = `
-    ${renderTabBar()}
-    <div class="screen admin-screen">
-      <div class="admin-header">
-        <div class="admin-header-top">
-          <div class="admin-title">⚙️ Painel Admin</div>
-          <button class="admin-logout-btn" onclick="doLogout()">Sair</button>
+    <div class="admin-desktop-layout">
+      <aside class="admin-sidebar">
+        <div class="admin-sidebar-logo">ANTIGRAVITY</div>
+        <div class="admin-sidebar-sub">Escolha seu treino</div>
+        <div class="admin-sidebar-user">
+          <div class="admin-sidebar-avatar">👑</div>
+          <div>
+            <div class="admin-sidebar-name">Admin</div>
+            <div class="admin-sidebar-login">Login: ${currentUserId}</div>
+          </div>
+          <button class="admin-sidebar-logout" onclick="doLogout()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </button>
         </div>
-        <div class="admin-subtitle">Gerenciar usuários e configurações</div>
-      </div>
-
-      <div class="admin-section">
-        <div class="admin-section-title">📋 Usuários Cadastrados</div>
-        <div class="admin-user-list">${usersHtml}</div>
-      </div>
-
-      <div class="admin-section">
-        <div class="admin-section-title">➕ Novo Usuário</div>
-        <div class="admin-add-user">
-          <input class="admin-input" type="number" id="new-user-id" placeholder="Login (número)" inputmode="numeric">
-          <input class="admin-input" type="password" id="new-user-pass" placeholder="Senha" inputmode="numeric">
-          <input class="admin-input" type="text" id="new-user-name" placeholder="Nome do aluno">
-          <select class="admin-input" id="new-user-gender">
-            <option value="homem">Homem</option>
-            <option value="mulher">Mulher</option>
-          </select>
-          <button class="admin-btn-create" onclick="createUser()">+ Criar Usuário</button>
+        <nav class="admin-sidebar-menu">
+          <div class="admin-menu-label">MENU</div>
+          <a class="admin-menu-item active" onclick="renderAdmin()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Visão geral
+          </a>
+          <a class="admin-menu-item" onclick="renderAdmin()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+            Painel Admin
+          </a>
+          <a class="admin-menu-item" onclick="showAdminSection('users')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            Usuários
+          </a>
+          <a class="admin-menu-item" onclick="showAdminSection('exercises')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5L17.5 17.5M6.5 17.5L17.5 6.5"/><circle cx="12" cy="12" r="4"/></svg>
+            Exercícios
+          </a>
+          <a class="admin-menu-item" onclick="navigate('builder')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Treinos semanais
+          </a>
+          <a class="admin-menu-item" onclick="renderAdmin()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+            Configurações
+          </a>
+        </nav>
+        <div class="admin-sidebar-sync">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+          <div>Última sincronização<br><strong style="color:#34d399;">Hoje</strong></div>
         </div>
-      </div>
+      </aside>
 
-      <div class="admin-section">
-        <div class="admin-section-title">📝 Exercícios Editados (${editCount})</div>
-        <div class="admin-exercise-search">
-          <input class="admin-input" type="text" id="admin-ex-search" placeholder="Buscar exercício por nome ou ID..." oninput="filterAdminExercises()">
+      <main class="admin-main">
+        <div class="admin-breadcrumb">Home &gt; Painel Admin</div>
+        <h1 class="admin-main-title">Painel Admin</h1>
+        <p class="admin-main-sub">Gerencie usuários, treinos e exercícios</p>
+
+        <div class="admin-top-actions">
+          <button class="admin-save-api-btn" onclick="saveAllConfig()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Salvar dados na API
+          </button>
+          <button class="admin-new-user-btn" onclick="showAdminSection('newuser')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Novo usuário
+          </button>
         </div>
-        <div id="admin-exercise-list" class="admin-exercise-list"></div>
-      </div>
 
-      <div class="admin-section">
-        <div class="admin-section-title">📅 Dias da Semana</div>
-        <div id="admin-schedule" class="admin-schedule"></div>
-      </div>
+        <div class="admin-stats-row">
+          <div class="admin-stat-card">
+            <div class="admin-stat-icon users">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            </div>
+            <div class="admin-stat-label">Usuários cadastrados</div>
+            <div class="admin-stat-value">${users.length}</div>
+          </div>
+          <div class="admin-stat-card">
+            <div class="admin-stat-icon exercises">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5L17.5 17.5M6.5 17.5L17.5 6.5"/><circle cx="12" cy="12" r="4"/></svg>
+            </div>
+            <div class="admin-stat-label">Exercícios editados</div>
+            <div class="admin-stat-value">${editCount}</div>
+          </div>
+          <div class="admin-stat-card">
+            <div class="admin-stat-icon workouts">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </div>
+            <div class="admin-stat-label">Treinos ativos</div>
+            <div class="admin-stat-value">${activeWorkouts}</div>
+          </div>
+        </div>
 
-      <div class="admin-section">
-        <button class="admin-save-btn" id="admin-save-btn" onclick="saveAllConfig()">💾 Salvar tudo na API</button>
-        <button class="admin-export-btn" onclick="exportConfig()">📦 Exportar Config JSON</button>
-      </div>
+        <div class="admin-table-section">
+          <h2 class="admin-section-heading">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            Usuários cadastrados
+          </h2>
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Usuário</th>
+                  <th>Login</th>
+                  <th>Perfil</th>
+                  <th>Último acesso</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>${userRows}</tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+
+      <aside class="admin-right-panel">
+        <div class="admin-right-section">
+          <h3 class="admin-right-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+            Novo usuário
+          </h3>
+          <div class="admin-right-form">
+            <div class="admin-right-field">
+              <label>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Login (número)
+              </label>
+              <input type="number" id="new-user-id" placeholder="#" inputmode="numeric">
+            </div>
+            <div class="admin-right-field">
+              <label>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                Senha
+              </label>
+              <input type="password" id="new-user-pass" placeholder="••••" inputmode="numeric">
+            </div>
+            <div class="admin-right-field">
+              <label>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Nome do aluno
+              </label>
+              <input type="text" id="new-user-name" placeholder="Nome">
+            </div>
+            <div class="admin-right-field">
+              <label>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Sexo
+              </label>
+              <select id="new-user-gender">
+                <option value="homem">Homem</option>
+                <option value="mulher">Mulher</option>
+              </select>
+            </div>
+            <button class="admin-right-create-btn" onclick="createUser()">+ Criar usuário</button>
+          </div>
+        </div>
+
+        <div class="admin-right-section">
+          <h3 class="admin-right-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5L17.5 17.5M6.5 17.5L17.5 6.5"/><circle cx="12" cy="12" r="4"/></svg>
+            Exercícios editados (${editCount})
+          </h3>
+          <div class="admin-right-search">
+            <input type="text" id="admin-ex-search" placeholder="Buscar exercício por nome ou ID..." oninput="filterAdminExercises()">
+          </div>
+          <div id="admin-exercise-list" class="admin-right-ex-list">${exList}</div>
+          <a class="admin-right-link" onclick="navigate('library')">Ver todos os exercícios →</a>
+        </div>
+      </aside>
     </div>
   `;
+}
 
-  filterAdminExercises();
-  renderAdminSchedule();
+function viewUserWorkout(userId, userName) {
+  builderTargetUserId = userId;
+  builderTargetUser = remoteConfig.users.find(u => u.id === userId);
+  builderSelectedDay = null;
+  builderWorkoutTitle = '';
+  navigate('builder');
+}
+
+function showAdminSection(section) {
+  renderAdmin();
+}
+
+function deleteExerciseEdit(exId) {
+  if (!confirm('Remover edição deste exercício?')) return;
+  delete remoteConfig.exerciseEdits[exId];
+  saveRemoteConfig();
+  renderAdmin();
 }
 
 function filterAdminExercises() {
