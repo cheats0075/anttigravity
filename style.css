@@ -2259,6 +2259,16 @@ body::after {
   align-items: center;
 }
 
+.admin-desktop-layout .builder-multi-confirm-bar {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  transform: none;
+  max-width: none;
+  width: 100%;
+  z-index: 10;
+}
+
 .builder-confirm-btn {
   padding: 14px 40px;
   border: none;
@@ -2652,6 +2662,15 @@ body::after {
   object-fit: cover;
   border-bottom: 1px solid rgba(99, 102, 241, 0.1);
   background: rgba(15, 15, 35, 0.5);
+}
+
+.admin-desktop-layout .library-card-gif {
+  aspect-ratio: 16/9;
+  max-height: 140px;
+}
+
+.admin-desktop-layout .library-grid {
+  grid-template-columns: repeat(3, 1fr);
 }
 
 .library-card-name {

@@ -3147,7 +3147,7 @@ function renderAdminMultiPicker() {
     <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:12px;">${filtered.length} exercício(s) encontrado(s) — toque para selecionar</div>
     <div class="library-grid">${cardsHtml}</div>
     <div style="height:80px;"></div>
-    <div class="builder-multi-confirm-bar" style="position:sticky;bottom:0;">
+    <div class="builder-multi-confirm-bar">
       <button class="builder-confirm-btn" id="builder-confirm-btn" onclick="confirmAdminMultiPick()" ${builderMultiPick.length === 0 ? 'disabled' : ''}>${builderMultiPick.length > 0 ? `✓ Concluir (${builderMultiPick.length})` : 'Selecione exercícios'}</button>
     </div>
   `;
