@@ -2190,6 +2190,10 @@ function updateBuilderPickCount() {
   if (titleEl) {
     titleEl.textContent = `Selecionar Treinos (${builderMultiPick.length})`;
   }
+  const adminTitleEl = document.querySelector('.admin-main-title');
+  if (adminTitleEl) {
+    adminTitleEl.textContent = `Selecionar Treinos (${builderMultiPick.length})`;
+  }
   const btn = document.getElementById('builder-confirm-btn');
   if (btn) {
     if (builderMultiPick.length > 0) {
@@ -2204,7 +2208,6 @@ function updateBuilderPickCount() {
 
 function onBuilderMultiSearch(value) {
   librarySearchQuery = value;
-  libraryDisplayCount = 50;
   updateBuilderMultiResults();
 }
 
@@ -2225,7 +2228,7 @@ function updateBuilderMultiResults() {
     filtered = filtered.filter(ex => ex.muscle === filter || ex.category === filter);
   }
 
-  const displayItems = filtered.slice(0, libraryDisplayCount);
+  const displayItems = filtered;
 
   const cardsHtml = displayItems.map(ex => {
     const gif = getExerciseGifPath(ex);
@@ -2243,16 +2246,12 @@ function updateBuilderMultiResults() {
 
   const countEl = document.getElementById('builder-count');
   const gridEl = document.getElementById('builder-grid');
-  const loadMoreEl = document.getElementById('builder-load-more');
 
   if (countEl) {
     countEl.textContent = `${filtered.length} exercício(s) encontrado(s) — toque para selecionar`;
   }
   if (gridEl) {
     gridEl.innerHTML = cardsHtml;
-  }
-  if (loadMoreEl) {
-    loadMoreEl.style.display = filtered.length > libraryDisplayCount ? 'block' : 'none';
   }
 }
 
@@ -2268,7 +2267,6 @@ function updateBuilderFilterButtons() {
 
 function setBuilderMultiFilter(filter) {
   libraryActiveFilter = filter;
-  libraryDisplayCount = 50;
   updateBuilderMultiResults();
   updateBuilderFilterButtons();
 }
@@ -3141,15 +3139,12 @@ function renderAdminMultiPicker() {
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Fechar
       </button>
       <h1 class="admin-main-title" style="margin-bottom:0;">Selecionar Treinos (${builderMultiPick.length})</h1>
+      <button class="builder-confirm-btn" id="builder-confirm-btn" onclick="confirmAdminMultiPick()" style="margin-left:auto;padding:10px 24px;font-size:0.9rem;" ${builderMultiPick.length === 0 ? 'disabled' : ''}>${builderMultiPick.length > 0 ? `✓ Concluir (${builderMultiPick.length})` : 'Selecione exercícios'}</button>
     </div>
     <div class="library-search-wrapper"><span class="library-search-icon">🔍</span><input class="library-search" type="text" placeholder="Buscar exercício..." value="${librarySearchQuery}" oninput="onBuilderMultiSearch(this.value)"></div>
     <div class="filters-container"><button class="filters-arrow filters-arrow-left" onclick="scrollFilters('builder-filters', -1)">‹</button><div id="builder-filters" class="library-filters scroll-x">${filtersHtml}</div><button class="filters-arrow filters-arrow-right" onclick="scrollFilters('builder-filters', 1)">›</button></div>
     <div id="builder-count" style="font-size:0.7rem;color:var(--text-muted);margin-bottom:12px;">${filtered.length} exercício(s) encontrado(s) — toque para selecionar</div>
     <div id="builder-grid" class="library-grid">${cardsHtml}</div>
-    <div id="builder-load-more" style="display:none;text-align:center;padding:16px;"><button class="btn-secondary" onclick="loadMoreBuilderMulti()">Carregar mais</button></div>
-    <div class="builder-multi-confirm-bar">
-      <button class="builder-confirm-btn" id="builder-confirm-btn" onclick="confirmAdminMultiPick()" ${builderMultiPick.length === 0 ? 'disabled' : ''}>${builderMultiPick.length > 0 ? `✓ Concluir (${builderMultiPick.length})` : 'Selecione exercícios'}</button>
-    </div>
   `;
 }
 
