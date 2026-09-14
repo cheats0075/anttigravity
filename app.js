@@ -2352,9 +2352,6 @@ function addBuilderExerciseFromPicker(exerciseId) {
   } else {
     dayWorkout.title = workoutTitle;
   }
-    };
-    userWorkouts[userId].push(dayWorkout);
-  }
 
   dayWorkout.exercises.push({
     id: `custom_${Date.now()}`,
