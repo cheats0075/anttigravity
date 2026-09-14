@@ -1019,61 +1019,6 @@ function saveWorkoutTitle(workoutId) {
   document.querySelector('.edit-modal-overlay').remove();
   renderDayList();
 }
-    const all = mergeWorkouts();
-    const days = all[currentGender] || [];
-
-    WEEK_DAYS.forEach((dayKey, idx) => {
-      const dayIndex = (idx + 1) % 7;
-      const dayWorkout = days.find(d => d.dayIndex === dayIndex && !d.restDay);
-      const dayWorkouts = days.filter(d => d.dayIndex === dayIndex);
-      const restDay = days.find(d => d.dayIndex === dayIndex && d.restDay);
-      const isToday = dayIndex === todayIdx;
-      const hasRestExercises = restDay && isRestDayWithExercises(restDay.id, currentGender);
-
-      let onclickAttr = '';
-      if (dayWorkout) {
-        onclickAttr = `selectDay('${dayWorkout.id}')`;
-      } else if (restDay) {
-        onclickAttr = `selectRestDay('${restDay.id}')`;
-      }
-
-      html += `
-        <div class="week-day-row ${isToday ? 'today' : ''} ${hasRestExercises ? 'has-exercises' : ''}" onclick="${onclickAttr}">
-          <div class="week-day-name">${WEEK_DAYS_DISPLAY[idx]}</div>
-          <div class="week-day-info">
-            ${dayWorkouts.length > 0
-              ? dayWorkouts.map(w => `
-                <div class="week-day-workout">
-                  <span class="week-day-workout-title">${w.title}</span>
-                  <span class="week-day-workout-exercises">${w.exercises.length} ex.</span>
-                  ${progress[w.id] ? '<span class="week-day-done">✓</span>' : ''}
-                </div>
-              `).join('')
-              : hasRestExercises
-                ? `<div class="week-day-workout">
-                    <span class="week-day-workout-title">Treino Livre</span>
-                    <span class="week-day-workout-exercises">${(loadRestDayExercises(currentGender)[restDay.id]?.exercises || []).length} ex.</span>
-                  </div>`
-                : '<span class="week-day-rest">Descanso</span>'
-            }
-          </div>
-          ${isToday ? '<span class="today-badge-sm">HOJE</span>' : ''}
-        </div>
-      `;
-    });
-
-    const customDays = (currentGender && customWorkouts[currentGender]) || [];
-    if (customDays.length > 0) {
-      html += `<div class="section-label-custom">⭐ TREINOS PERSONALIZADOS</div>`;
-      customDays.forEach(day => {
-        html += renderDayCard(day, todayIdx, progress, true);
-      });
-    }
-  }
-
-  html += `</div>`;
-  app.innerHTML = html;
-}
 
 function renderDayCard(day, todayIdx, progress, isCustom) {
   const completed = progress[day.id] === true;
