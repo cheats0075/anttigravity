@@ -3867,31 +3867,122 @@ select {
   font-size: 0.7rem;
 }
 
-/* Exercise execution - responsive sizing */
+/* Exercise execution - fit mobile viewport */
+.csa-exercise {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.csa-exercise .csa-scroll-content {
+  overflow-y: auto;
+  padding: 0;
+}
+
 .csa-exercise .csa-card {
   max-width: 400px;
-  margin-left: auto;
-  margin-right: auto;
+  margin: 10px auto;
+  padding: 16px 20px;
+  border-radius: 16px;
+}
+
+.csa-exercise .csa-exercise-name {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.csa-exercise .csa-muscle-badge {
+  padding: 4px 14px;
+  font-size: 0.7rem;
+  margin-bottom: 6px;
+}
+
+.csa-exercise .csa-stats-row {
+  gap: 20px;
+  font-size: 0.8rem;
+  margin-bottom: 8px;
 }
 
 .csa-exercise .csa-exercise-image {
-  width: 280px;
-  height: 280px;
-  border-radius: 18px;
+  width: 180px;
+  height: 180px;
+  border-radius: 14px;
+  margin-bottom: 10px;
+}
+
+.csa-exercise .csa-reps-count {
+  font-size: 2.5rem;
+}
+
+.csa-exercise .csa-reps-label {
+  font-size: 0.8rem;
+  margin-top: 2px;
+}
+
+.csa-exercise .csa-reps-info {
+  margin-bottom: 8px;
+}
+
+.csa-exercise .csa-set-indicators {
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.csa-exercise .csa-set-dot {
+  width: 36px;
+  height: 36px;
+  font-size: 0.8rem;
+}
+
+.csa-exercise .csa-weight-section {
+  margin-bottom: 8px;
+}
+
+.csa-exercise .csa-weight-label {
+  font-size: 0.75rem;
+  margin-bottom: 4px;
+}
+
+.csa-exercise .csa-weight-btn {
+  width: 40px;
+  height: 40px;
+  font-size: 1.2rem;
+}
+
+.csa-exercise .csa-weight-field {
+  width: 70px;
+  height: 40px;
+  font-size: 1.1rem;
+}
+
+.csa-exercise .csa-settings-btn {
+  padding: 10px;
+  margin: 0 16px 8px;
+  font-size: 0.85rem;
 }
 
 .csa-exercise .csa-bottom-nav {
-  justify-content: center;
+  padding: 10px 16px;
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+  gap: 24px;
+  flex-shrink: 0;
 }
 
 .csa-exercise .csa-check-btn {
-  width: 100px;
-  height: 100px;
+  width: 80px;
+  height: 80px;
 }
 
 .csa-exercise .csa-check-btn svg {
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
+}
+
+.csa-exercise .csa-nav-arrow {
+  width: 44px;
+  height: 44px;
+  font-size: 1.2rem;
 }
 
 .admin-desktop-layout ~ #app,
