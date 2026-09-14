@@ -1095,6 +1095,241 @@ body::after {
   box-shadow: 0 0 10px var(--accent-glow);
 }
 
+/* ═══════════════════════════════════════════════════════
+   DAY LIST SCREEN (New Design)
+   ═══════════════════════════════════════════════════════ */
+.daylist-screen {
+  padding-top: 10px;
+}
+
+.daylist-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.daylist-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  background: rgba(139, 92, 246, 0.08);
+  color: #c4b5fd;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  font-family: 'Inter', sans-serif;
+}
+
+.daylist-back:hover {
+  background: rgba(139, 92, 246, 0.15);
+  border-color: #a78bfa;
+}
+
+.daylist-header-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.daylist-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(248, 113, 113, 0.25);
+  background: rgba(248, 113, 113, 0.08);
+  color: #f87171;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition);
+}
+
+.daylist-close:hover {
+  background: rgba(248, 113, 113, 0.15);
+  border-color: #f87171;
+}
+
+.daylist-user-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+  background: rgba(15, 15, 35, 0.7);
+  border: 1px solid rgba(139, 92, 246, 0.12);
+  border-radius: 18px;
+  backdrop-filter: blur(10px);
+}
+
+.daylist-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  color: #fff;
+  font-size: 1.4rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.daylist-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.daylist-user-name {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.daylist-user-sub {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.daylist-progress {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+  padding: 0 4px;
+}
+
+.daylist-progress-bar {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+}
+
+.daylist-progress-seg {
+  height: 6px;
+  flex: 1;
+  border-radius: 3px;
+  background: rgba(139, 92, 246, 0.15);
+  transition: all var(--transition);
+}
+
+.daylist-progress-seg.filled {
+  background: linear-gradient(90deg, #7c3aed, #6366f1);
+  box-shadow: 0 0 8px rgba(124, 58, 237, 0.4);
+}
+
+.daylist-progress-text {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.daylist-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  margin-bottom: 10px;
+  background: rgba(15, 15, 35, 0.6);
+  border: 1px solid rgba(139, 92, 246, 0.08);
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all var(--transition);
+  animation: slideUp 0.4s ease;
+}
+
+.daylist-row:hover {
+  background: rgba(139, 92, 246, 0.06);
+  border-color: rgba(139, 92, 246, 0.15);
+  transform: translateX(4px);
+}
+
+.daylist-row.today {
+  border-color: rgba(139, 92, 246, 0.35);
+  background: rgba(139, 92, 246, 0.08);
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.12), inset 0 0 20px rgba(139, 92, 246, 0.05);
+}
+
+.daylist-row.rest {
+  opacity: 0.65;
+}
+
+.daylist-row-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(139, 92, 246, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.daylist-row.rest .daylist-row-icon {
+  background: rgba(100, 116, 139, 0.1);
+}
+
+.daylist-row-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.daylist-row-day {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 2px;
+}
+
+.daylist-row-workout {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.daylist-row-workout:hover {
+  color: #a78bfa;
+}
+
+.daylist-row-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.daylist-row-count {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #a78bfa;
+  padding: 4px 10px;
+  background: rgba(139, 92, 246, 0.12);
+  border-radius: 8px;
+}
+
+.daylist-today-badge {
+  padding: 5px 14px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  box-shadow: 0 0 12px rgba(124, 58, 237, 0.4);
+}
+
 .section-label-custom {
   font-size: 0.75rem;
   color: var(--secondary);

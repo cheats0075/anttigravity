@@ -843,12 +843,50 @@ function renderDayList() {
     userDays = userWorkouts[currentUserId];
   }
 
+  const dayIcons = [
+    `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M12 4v16M2 12h20"/></svg>`,
+    `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.5"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>`,
+    `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.5"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>`,
+    `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>`,
+    `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.5"><path d="M6.5 6.5L17.5 17.5M6.5 17.5L17.5 6.5"/><circle cx="12" cy="12" r="4"/></svg>`,
+    `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.5"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>`,
+    `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.5"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>`
+  ];
+
+  const completedDays = userDays.filter(d => d.exercises && d.exercises.length > 0 && progress[d.id]).length;
+  const totalDays = userDays.filter(d => d.exercises && d.exercises.length > 0).length;
+
   let html = `
-    <div class="screen">
-      <div class="day-list-header">
-        <button class="btn-back-days" onclick="goHome()">← Voltar</button>
-        <div class="day-list-title">${currentUserIsAdmin ? (currentGender === 'homem' ? 'HOMEM' : 'MULHER') : currentUserName}</div>
-        ${currentUserIsAdmin ? `<button class="btn-history" onclick="showHistory()">Histórico</button>` : ''}
+    <div class="screen daylist-screen">
+      <div class="daylist-header">
+        <button class="daylist-back" onclick="goHome()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          Voltar
+        </button>
+        <div class="daylist-header-name">${currentUserName}</div>
+        <button class="daylist-close" onclick="goHome()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="daylist-user-card">
+        <div class="daylist-avatar">${currentUserName.charAt(0).toUpperCase()}</div>
+        <div class="daylist-user-info">
+          <div class="daylist-user-name">${currentUserName}</div>
+          <div class="daylist-user-sub">Plano semanal de estudos</div>
+        </div>
+      </div>
+
+      <div class="daylist-progress">
+        <div class="daylist-progress-bar">
+          ${Array.from({length: 7}, (_, i) => {
+            const dayIndex = (i + 1) % 7;
+            const dayWorkout = userDays.find(d => d.dayIndex === dayIndex);
+            const completed = dayWorkout && progress[dayWorkout.id];
+            return `<div class="daylist-progress-seg ${completed ? 'filled' : ''}"></div>`;
+          }).join('')}
+        </div>
+        <div class="daylist-progress-text">${completedDays}/${totalDays} dias</div>
       </div>
   `;
 
@@ -857,25 +895,130 @@ function renderDayList() {
       const dayIndex = (idx + 1) % 7;
       const dayWorkout = userDays.find(d => d.dayIndex === dayIndex);
       const isToday = dayIndex === todayIdx;
+      const hasWorkout = dayWorkout && dayWorkout.exercises && dayWorkout.exercises.length > 0;
+      const isRestDay = !hasWorkout;
 
       html += `
-        <div class="week-day-row ${isToday ? 'today' : ''}" onclick="${dayWorkout && dayWorkout.exercises && dayWorkout.exercises.length > 0 ? `selectDay('${dayWorkout.id}')` : ''}">
-          <div class="week-day-name">${WEEK_DAYS_DISPLAY[idx]}</div>
-          <div class="week-day-info">
-            ${dayWorkout && dayWorkout.exercises && dayWorkout.exercises.length > 0
-              ? `<div class="week-day-workout">
-                  <span class="week-day-workout-title">${dayWorkout.title}</span>
-                  <span class="week-day-workout-exercises">${dayWorkout.exercises.length} ex.</span>
-                  ${progress[dayWorkout.id] ? '<span class="week-day-done">✓</span>' : ''}
-                </div>`
-              : '<span class="week-day-rest">Descanso</span>'
-            }
+        <div class="daylist-row ${isToday ? 'today' : ''} ${isRestDay ? 'rest' : ''}" onclick="${hasWorkout ? `selectDay('${dayWorkout.id}')` : ''}">
+          <div class="daylist-row-icon">${dayIcons[idx]}</div>
+          <div class="daylist-row-content">
+            <div class="daylist-row-day">${WEEK_DAYS_DISPLAY[idx]}</div>
+            <div class="daylist-row-workout" onclick="event.stopPropagation(); ${hasWorkout ? `editWorkoutTitle('${dayWorkout.id}', '${dayWorkout.title.replace(/'/g, "\\'")}')` : ''}">
+              ${hasWorkout ? dayWorkout.title : 'Descanso'}
+            </div>
           </div>
-          ${isToday ? '<span class="today-badge-sm">HOJE</span>' : ''}
+          <div class="daylist-row-right">
+            ${hasWorkout
+              ? `<span class="daylist-row-count">${dayWorkout.exercises.length} ex.</span>`
+              : `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.5"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>`
+            }
+            ${isToday ? '<span class="daylist-today-badge">HOJE</span>' : ''}
+          </div>
         </div>
       `;
     });
   } else {
+    const all = mergeWorkouts();
+    const days = all[currentGender] || [];
+
+    WEEK_DAYS.forEach((dayKey, idx) => {
+      const dayIndex = (idx + 1) % 7;
+      const dayWorkout = days.find(d => d.dayIndex === dayIndex && !d.restDay);
+      const dayWorkouts = days.filter(d => d.dayIndex === dayIndex);
+      const restDay = days.find(d => d.dayIndex === dayIndex && d.restDay);
+      const isToday = dayIndex === todayIdx;
+      const hasRestExercises = restDay && isRestDayWithExercises(restDay.id, currentGender);
+
+      let onclickAttr = '';
+      if (dayWorkout) {
+        onclickAttr = `selectDay('${dayWorkout.id}')`;
+      } else if (restDay) {
+        onclickAttr = `selectRestDay('${restDay.id}')`;
+      }
+
+      html += `
+        <div class="daylist-row ${isToday ? 'today' : ''} ${hasRestExercises ? 'has-exercises' : ''}" onclick="${onclickAttr}">
+          <div class="daylist-row-icon">${dayIcons[idx]}</div>
+          <div class="daylist-row-content">
+            <div class="daylist-row-day">${WEEK_DAYS_DISPLAY[idx]}</div>
+            <div class="daylist-row-workout">
+              ${dayWorkouts.length > 0
+                ? dayWorkouts.map(w => w.title).join(', ')
+                : hasRestExercises ? 'Treino Livre' : 'Descanso'
+              }
+            </div>
+          </div>
+          <div class="daylist-row-right">
+            ${dayWorkouts.length > 0
+              ? `<span class="daylist-row-count">${dayWorkouts.reduce((sum, w) => sum + w.exercises.length, 0)} ex.</span>`
+              : hasRestExercises
+                ? `<span class="daylist-row-count">${(loadRestDayExercises(currentGender)[restDay.id]?.exercises || []).length} ex.</span>`
+                : `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.5"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>`
+            }
+            ${isToday ? '<span class="daylist-today-badge">HOJE</span>' : ''}
+          </div>
+        </div>
+      `;
+    });
+
+    const customDays = (currentGender && customWorkouts[currentGender]) || [];
+    if (customDays.length > 0) {
+      html += `<div class="section-label-custom">⭐ TREINOS PERSONALIZADOS</div>`;
+      customDays.forEach(day => {
+        html += renderDayCard(day, todayIdx, progress, true);
+      });
+    }
+  }
+
+  html += `</div>`;
+  app.innerHTML = html;
+}
+
+function editWorkoutTitle(workoutId, currentTitle) {
+  const modal = document.createElement('div');
+  modal.className = 'edit-modal-overlay';
+  modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+  modal.innerHTML = `
+    <div class="edit-modal">
+      <div class="edit-modal-header">
+        <h3>Editar Nome do Treino</h3>
+        <button class="edit-modal-close" onclick="this.closest('.edit-modal-overlay').remove()">✕</button>
+      </div>
+      <div class="edit-modal-body">
+        <div class="edit-modal-field">
+          <label>Nome do Treino</label>
+          <input type="text" id="edit-workout-title" value="${currentTitle}" placeholder="Ex: Peito e Tríceps">
+        </div>
+        <div id="edit-title-error" class="edit-pass-error" style="display:none;">Digite um nome para o treino</div>
+        <button class="edit-modal-save" onclick="saveWorkoutTitle('${workoutId}')">Salvar</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+function saveWorkoutTitle(workoutId) {
+  const newTitle = document.getElementById('edit-workout-title').value.trim();
+  const errorEl = document.getElementById('edit-title-error');
+
+  if (!newTitle) {
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  errorEl.style.display = 'none';
+
+  if (!currentUserIsAdmin && currentUserId && userWorkouts[currentUserId]) {
+    const workout = userWorkouts[currentUserId].find(d => d.id === workoutId);
+    if (workout) {
+      workout.title = newTitle;
+      saveUserWorkouts(currentUserId, userWorkouts[currentUserId]);
+    }
+  }
+
+  document.querySelector('.edit-modal-overlay').remove();
+  renderDayList();
+}
     const all = mergeWorkouts();
     const days = all[currentGender] || [];
 
