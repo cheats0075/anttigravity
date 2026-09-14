@@ -48,6 +48,7 @@ let builderTargetUser = null;
 let builderSelectedDay = null;
 let builderMultiPick = [];
 let builderMultiMode = false;
+let builderWorkoutTitle = '';
 
 let customWorkouts = {};
 let userWorkouts = {};
@@ -905,9 +906,6 @@ function renderDayList() {
             <div class="daylist-row-day">${WEEK_DAYS_DISPLAY[idx]}</div>
             <div class="daylist-row-workout-wrap">
               <span class="daylist-row-workout">${hasWorkout ? dayWorkout.title : 'Descanso'}</span>
-              ${hasWorkout ? `<button class="daylist-edit-title" onclick="event.stopPropagation(); editWorkoutTitle('${dayWorkout.id}', '${dayWorkout.title.replace(/'/g, "\\'")}')">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              </button>` : ''}
             </div>
           </div>
           <div class="daylist-row-right">
@@ -2033,13 +2031,21 @@ function renderBuilderDayExercises() {
 
   const exercises = dayWorkout && dayWorkout.exercises ? dayWorkout.exercises : [];
 
+  if (!builderWorkoutTitle && dayWorkout && dayWorkout.title) {
+    builderWorkoutTitle = dayWorkout.title === day.dayName ? '' : dayWorkout.title;
+  }
+
   app.innerHTML = `
     ${renderTabBar()}
     <div class="screen builder-screen">
       <div class="builder-header">
         <h2>${user.name}</h2>
-        <button class="btn-back-days" onclick="builderSelectedDay = null; renderBuilderUserDays();">← Voltar</button>
+        <button class="btn-back-days" onclick="builderSelectedDay = null; builderWorkoutTitle = ''; renderBuilderUserDays();">← Voltar</button>
         <p>${day.dayName}</p>
+      </div>
+      <div class="builder-title-field">
+        <label>Nome do Treino</label>
+        <input type="text" id="builder-workout-title" value="${builderWorkoutTitle}" placeholder="Ex: Bíceps e Tríceps" oninput="builderWorkoutTitle = this.value">
       </div>
       ${exercises.length > 0 ? `
         <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:12px;letter-spacing:1px;font-weight:700;">EXERCÍCIOS (${exercises.length})</div>
@@ -2262,17 +2268,22 @@ function confirmBuilderMultiPick() {
   const userId = builderTargetUser.id;
   if (!userWorkouts[userId]) userWorkouts[userId] = [];
 
+  const titleInput = document.getElementById('builder-workout-title');
+  const workoutTitle = (titleInput ? titleInput.value.trim() : '') || builderSelectedDay.dayName;
+
   let dayWorkout = userWorkouts[userId].find(d => d.dayIndex === builderSelectedDay.dayIndex);
   if (!dayWorkout) {
     dayWorkout = {
       id: `cw_${userId}_${builderSelectedDay.dayIndex}`,
       day: builderSelectedDay.dayName,
       dayIndex: builderSelectedDay.dayIndex,
-      title: builderSelectedDay.dayName,
+      title: workoutTitle,
       restDay: false,
       exercises: []
     };
     userWorkouts[userId].push(dayWorkout);
+  } else {
+    dayWorkout.title = workoutTitle;
   }
 
   const db = getExercisesDB();
@@ -2303,6 +2314,7 @@ function closeBuilderMultiPicker() {
   if (builderTargetUser && builderSelectedDay) {
     renderBuilderDayExercises();
   } else {
+    builderWorkoutTitle = '';
     renderBuilder();
   }
 }
@@ -2323,15 +2335,23 @@ function addBuilderExerciseFromPicker(exerciseId) {
   const userId = builderTargetUser.id;
   if (!userWorkouts[userId]) userWorkouts[userId] = [];
 
+  const titleInput = document.getElementById('builder-workout-title');
+  const workoutTitle = (titleInput ? titleInput.value.trim() : '') || builderSelectedDay.dayName;
+
   let dayWorkout = userWorkouts[userId].find(d => d.dayIndex === builderSelectedDay.dayIndex);
   if (!dayWorkout) {
     dayWorkout = {
       id: `cw_${userId}_${builderSelectedDay.dayIndex}`,
       day: builderSelectedDay.dayName,
       dayIndex: builderSelectedDay.dayIndex,
-      title: builderSelectedDay.dayName,
+      title: workoutTitle,
       restDay: false,
       exercises: []
+    };
+    userWorkouts[userId].push(dayWorkout);
+  } else {
+    dayWorkout.title = workoutTitle;
+  }
     };
     userWorkouts[userId].push(dayWorkout);
   }

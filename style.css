@@ -2873,6 +2873,40 @@ body::after {
   background: rgba(248, 113, 113, 0.2);
 }
 
+.builder-title-field {
+  margin-bottom: 20px;
+}
+
+.builder-title-field label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #a78bfa;
+  margin-bottom: 6px;
+}
+
+.builder-title-field input {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(139, 92, 246, 0.2);
+  background: rgba(5, 5, 16, 0.6);
+  color: #fff;
+  font-size: 0.95rem;
+  outline: none;
+  transition: all var(--transition);
+  font-family: 'Inter', sans-serif;
+}
+
+.builder-title-field input:focus {
+  border-color: #a78bfa;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.builder-title-field input::placeholder {
+  color: var(--text-muted);
+}
+
 .builder-add-btn {
   width: 100%;
   padding: 16px;
