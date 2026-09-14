@@ -2246,7 +2246,7 @@ body::after {
   transform: translateX(-50%);
   width: 100%;
   max-width: 430px;
-  z-index: 50;
+  z-index: 100;
   background: rgba(5, 5, 16, 0.95);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -2254,7 +2254,9 @@ body::after {
   padding: 14px 16px;
   padding-bottom: max(14px, env(safe-area-inset-bottom));
   box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.3);
-  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .builder-confirm-btn {
@@ -2269,6 +2271,13 @@ body::after {
   box-shadow: 0 4px 20px var(--success-glow);
   transition: all var(--transition);
   font-family: 'Inter', sans-serif;
+}
+
+.builder-confirm-btn:disabled {
+  background: rgba(100, 116, 139, 0.3);
+  color: var(--text-muted);
+  box-shadow: none;
+  cursor: not-allowed;
 }
 
 .btn-history {

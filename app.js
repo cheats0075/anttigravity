@@ -2145,10 +2145,10 @@ function renderBuilderMultiPicker() {
       </div>
       <div id="builder-count" style="font-size:0.7rem;color:var(--text-muted);margin-bottom:12px;">${filtered.length} exercício(s) encontrado(s) — toque para selecionar</div>
       <div id="builder-grid" class="library-grid">${cardsHtml}</div>
-      <div id="builder-load-more" style="text-align:center;padding:20px;${filtered.length > libraryDisplayCount ? '' : 'display:none;'}"><button class="btn-back-days" onclick="loadMoreBuilderMulti()">Carregar mais</button></div>
-      <div class="builder-multi-confirm-bar" style="${builderMultiPick.length > 0 ? '' : 'display:none;'}">
-        <button class="builder-confirm-btn" onclick="confirmBuilderMultiPick()">✓ Concluir (${builderMultiPick.length})</button>
-      </div>
+      <div style="height:80px;"></div>
+    </div>
+    <div class="builder-multi-confirm-bar" id="builder-confirm-bar">
+      <button class="builder-confirm-btn" id="builder-confirm-btn" onclick="confirmBuilderMultiPick()" disabled>Selecione exercícios</button>
     </div>
   `;
 }
@@ -2175,13 +2175,14 @@ function updateBuilderPickCount() {
   if (titleEl) {
     titleEl.textContent = `Selecionar Treinos (${builderMultiPick.length})`;
   }
-  const bar = document.querySelector('.builder-multi-confirm-bar');
-  if (bar) {
+  const btn = document.getElementById('builder-confirm-btn');
+  if (btn) {
     if (builderMultiPick.length > 0) {
-      bar.innerHTML = `<button class="builder-confirm-btn" onclick="confirmBuilderMultiPick()">✓ Concluir (${builderMultiPick.length})</button>`;
-      bar.style.display = 'flex';
+      btn.disabled = false;
+      btn.textContent = `✓ Concluir (${builderMultiPick.length})`;
     } else {
-      bar.style.display = 'none';
+      btn.disabled = true;
+      btn.textContent = 'Selecione exercícios';
     }
   }
 }
