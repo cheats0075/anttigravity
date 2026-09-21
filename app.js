@@ -3056,8 +3056,12 @@ function renderAdminDayExercises() {
     return `
       <div class="builder-exercise-item">
         <img class="exercise-thumb" src="${gif}" alt="${ex.name}" onerror="this.style.display='none'">
-        <div class="builder-exercise-info"><div class="name">${ex.name}</div><div class="muscle">${ex.muscle || ''}</div><div style="font-size:0.7rem;color:var(--text-muted);">${ex.sets}x ${ex.reps}</div></div>
-        <div style="display:flex;gap:6px;">
+        <div class="builder-exercise-info">
+          <div class="name">${ex.name}</div>
+          <div class="muscle">${ex.muscle || ''}</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);font-weight:500;">${ex.sets}x ${ex.reps}</div>
+        </div>
+        <div style="display:flex;gap:8px;">
           <button class="builder-action-btn swap" onclick="swapBuilderExerciseFromDay(${i})">🔄</button>
           <button class="builder-action-btn delete" onclick="removeBuilderExerciseFromDayAdmin(${i})">✕</button>
         </div>
@@ -3067,24 +3071,31 @@ function renderAdminDayExercises() {
 
   return `
     <div class="admin-breadcrumb">Home &gt; Painel Admin &gt; Treinos &gt; ${day.dayName}</div>
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
       <button class="daylist-back" onclick="builderSelectedDay=null;renderAdminShell();">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Voltar
       </button>
       <h1 class="admin-main-title" style="margin-bottom:0;">${user.name} — ${day.dayName}</h1>
     </div>
-    <div class="builder-title-field"><label>Nome do Treino</label><input type="text" id="builder-workout-title" value="${builderWorkoutTitle}" placeholder="Ex: Bíceps e Tríceps" oninput="builderWorkoutTitle = this.value"></div>
+    <div class="builder-title-field">
+      <label>Nome do Treino</label>
+      <input type="text" id="builder-workout-title" value="${builderWorkoutTitle}" placeholder="Ex: Bíceps e Tríceps" oninput="builderWorkoutTitle = this.value">
+    </div>
     ${exercises.length > 0 ? `
       <div class="admin-section-heading">Exercícios (${exercises.length})</div>
       ${exList}
     ` : `
-      <div style="text-align:center;padding:40px 20px;color:var(--text-muted);">
-        <div style="font-size:3rem;margin-bottom:12px;opacity:0.4;">🏋️</div>
-        <div style="font-size:1rem;font-weight:600;margin-bottom:4px;">Nenhum exercício</div>
-        <div style="font-size:0.85rem;">Adicione exercícios para este dia</div>
+      <div style="text-align:center;padding:48px 20px;color:var(--text-muted);">
+        <div style="font-size:4rem;margin-bottom:16px;opacity:0.4;">🏋️</div>
+        <div style="font-size:1.05rem;font-weight:600;margin-bottom:6px;">Nenhum exercício</div>
+        <div style="font-size:0.9rem;">Adicione exercícios para este dia</div>
       </div>
     `}
     <button class="builder-add-btn" onclick="openAdminMultiPicker()" style="margin-top:16px;">+ Adicionar Treino</button>
+    <button class="admin-save-workout-btn" onclick="saveAdminDayWorkout()" id="admin-save-workout-btn" style="margin-top:16px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+      Salvar na API
+    </button>
   `;
 }
 
@@ -3190,6 +3201,52 @@ function removeBuilderExerciseFromDayAdmin(index) {
     userWorkouts[userId] = userDays.filter(d => d.dayIndex !== builderSelectedDay.dayIndex);
   }
   saveUserWorkouts(userId, userWorkouts[userId]);
+  renderAdminShell();
+}
+
+async function saveAdminDayWorkout() {
+  if (!builderTargetUser || !builderSelectedDay) return;
+  const userId = builderTargetUser.id;
+  const userDays = userWorkouts[userId] || [];
+  const dayWorkout = userDays.find(d => d.dayIndex === builderSelectedDay.dayIndex);
+
+  const workoutTitle = builderWorkoutTitle || builderSelectedDay.dayName;
+
+  if (dayWorkout) {
+    dayWorkout.title = workoutTitle;
+  } else {
+    const newWorkout = {
+      id: `cw_${userId}_${builderSelectedDay.dayIndex}`,
+      day: builderSelectedDay.dayName,
+      dayIndex: builderSelectedDay.dayIndex,
+      title: workoutTitle,
+      restDay: false,
+      exercises: []
+    };
+    userWorkouts[userId].push(newWorkout);
+  }
+
+  const btn = document.getElementById('admin-save-workout-btn');
+  if (btn) { btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg> Salvando...'; btn.disabled = true; }
+
+  const saved = await saveUserWorkouts(userId, userWorkouts[userId]);
+
+  if (btn) {
+    if (saved) {
+      btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Salvo!';
+      setTimeout(() => {
+        btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg> Salvar na API';
+        btn.disabled = false;
+      }, 1500);
+    } else {
+      btn.innerHTML = 'Erro ao salvar. Tente novamente.';
+      setTimeout(() => {
+        btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg> Salvar na API';
+        btn.disabled = false;
+      }, 2000);
+    }
+  }
+
   renderAdminShell();
 }
 
