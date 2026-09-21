@@ -184,7 +184,18 @@ async function loadRemoteConfig() {
   }
 }
 
-function saveRemoteConfig() {}
+async function saveRemoteConfig() {
+  if (!authToken || !currentUserIsAdmin) return;
+  if (!apiLoaded) return;
+  try {
+    await apiPut('/config', {
+      exerciseEdits: remoteConfig.exerciseEdits,
+      weeklySchedule: remoteConfig.weeklySchedule
+    });
+  } catch (e) {
+    console.warn('saveRemoteConfig error:', e);
+  }
+}
 
 async function saveAllConfig() {
   if (!authToken || !currentUserIsAdmin) { alert('Apenas admin pode salvar.'); return; }
