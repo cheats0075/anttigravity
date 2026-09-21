@@ -1543,8 +1543,8 @@ body::after {
 }
 
 .exercise-thumb {
-  width: 54px;
-  height: 54px;
+  width: 68px;
+  height: 68px;
   border-radius: 14px;
   object-fit: cover;
   border: 2px solid rgba(99, 102, 241, 0.15);
@@ -1558,8 +1558,8 @@ body::after {
 }
 
 .exercise-thumb-lg {
-  width: 72px;
-  height: 72px;
+  width: 80px;
+  height: 80px;
   border-radius: 16px;
   object-fit: cover;
   border: 2px solid rgba(99, 102, 241, 0.15);
@@ -2970,6 +2970,74 @@ body::after {
   transform: translateY(-2px);
 }
 
+.builder-action-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(99, 102, 241, 0.15);
+  background: rgba(99, 102, 241, 0.06);
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all var(--transition);
+}
+
+.builder-action-btn:hover {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: var(--accent);
+}
+
+.builder-action-btn.delete {
+  border-color: rgba(248, 113, 113, 0.2);
+  background: rgba(248, 113, 113, 0.06);
+  color: var(--danger);
+}
+
+.builder-action-btn.delete:hover {
+  background: rgba(248, 113, 113, 0.15);
+  border-color: var(--danger);
+}
+
+.admin-save-workout-btn {
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: var(--radius-lg);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  color: white;
+  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.35);
+  transition: all var(--transition);
+  font-family: 'Inter', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.admin-save-workout-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 25px rgba(124, 58, 237, 0.45);
+}
+
+.admin-save-workout-btn:active {
+  transform: translateY(0);
+}
+
+.admin-save-workout-btn:disabled {
+  background: rgba(100, 116, 139, 0.3);
+  color: var(--text-muted);
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
 /* ═══════════════════════════════════════════════════════
    SHARE/EXPORT
    ═══════════════════════════════════════════════════════ */
@@ -3378,7 +3446,7 @@ body::after {
 }
 
 .edit-modal-user-icon {
-  font-size: 1.5rem;
+  font-size: 2rem;
 }
 
 .edit-modal-user strong {
@@ -3499,13 +3567,13 @@ body::after {
 }
 
 .admin-ex-gif {
-  width: 56px;
-  height: 56px;
-  border-radius: 10px;
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
   object-fit: cover;
   background: rgba(15, 15, 35, 0.5);
   flex-shrink: 0;
-  border: 1px solid rgba(99, 102, 241, 0.1);
+  border: 1.5px solid rgba(99, 102, 241, 0.15);
 }
 
 .admin-ex-info {
@@ -3518,12 +3586,12 @@ body::after {
 
 .admin-ex-name-input {
   width: 100%;
-  padding: 8px 10px;
+  padding: 10px 12px;
   border-radius: 8px;
   border: 1.5px solid rgba(99, 102, 241, 0.15);
   background: rgba(99, 102, 241, 0.04);
   color: var(--text-primary);
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 600;
   outline: none;
   transition: border-color var(--transition);
@@ -4060,14 +4128,14 @@ select {
 }
 
 .admin-sidebar-avatar {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 12px;
   background: linear-gradient(135deg, #7c3aed, #6366f1);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
+  font-size: 1.5rem;
   flex-shrink: 0;
 }
 
@@ -4318,14 +4386,14 @@ select {
 }
 
 .admin-table-avatar {
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
   border-radius: 10px;
   background: rgba(139, 92, 246, 0.12);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.85rem;
+  font-size: 1rem;
   font-weight: 700;
   color: #c4b5fd;
   flex-shrink: 0;
@@ -4333,7 +4401,7 @@ select {
 
 .admin-table-avatar.admin {
   background: linear-gradient(135deg, #7c3aed, #6366f1);
-  font-size: 1rem;
+  font-size: 1.2rem;
 }
 
 .admin-badge {
