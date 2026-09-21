@@ -50,6 +50,8 @@ let builderMultiPick = [];
 let builderMultiMode = false;
 let builderWorkoutTitle = '';
 let adminSection = 'overview';
+let adminExDisplayCount = 50;
+let adminExSearchQuery = '';
 
 let customWorkouts = {};
 let userWorkouts = {};
@@ -2818,6 +2820,9 @@ function renderAdminShell() {
     </div>
   `;
   filterAdminExercises();
+  if (adminSection === 'exercises') {
+    setTimeout(() => renderAdminExListFull(), 10);
+  }
 }
 
 function renderAdminContent() {
@@ -2903,29 +2908,29 @@ function renderAdminUsers() {
 function renderAdminExercises() {
   const db = typeof EXERCISES_DB !== 'undefined' ? EXERCISES_DB : [];
   const MUSCLES = ["Todos","Abdome","Antebraço","Bíceps","Corpo","Costas","Glúteo","Membros Superiores","Membros Inferiores","Ombro","Peito","Perna","Tríceps"];
-  const exList = db.slice(0, 50).map(ex => {
-    const edit = remoteConfig.exerciseEdits[String(ex.id)] || {};
-    const displayName = edit.name || ex.name;
-    const displayMuscle = edit.muscle || ex.muscle;
-    return `
-      <div class="admin-ex-item">
-        <div class="admin-ex-thumb">${ex.id}</div>
-        <div class="admin-ex-info"><div class="admin-ex-name">${displayName}</div><div class="admin-ex-muscle">${displayMuscle}</div></div>
-        <div class="admin-ex-actions">
-          <button class="admin-ex-edit-btn" onclick="editExercise(${ex.id})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-          <button class="admin-ex-delete-btn" onclick="deleteExerciseEdit(${ex.id})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
-        </div>
-      </div>
-    `;
-  }).join('');
+  adminExSearchQuery = '';
+  adminExDisplayCount = 50;
+  adminExActiveFilter = 'Todos';
+
+  const filterChips = MUSCLES.map(f =>
+    `<button class="filter-chip ${f === 'Todos' ? 'active' : ''}" onclick="setAdminExFilter('${f}')">${f}</button>`
+  ).join('');
 
   return `
     <div class="admin-breadcrumb">Home &gt; Painel Admin &gt; Exercícios</div>
     <h1 class="admin-main-title">Exercícios</h1>
-    <p class="admin-main-sub">Edite nomes e grupos musculares dos exercícios</p>
-    <div class="admin-right-search" style="margin-bottom:16px;"><input type="text" id="admin-ex-search-full" placeholder="Buscar exercício por nome ou ID..." oninput="filterAdminExercisesFull()"></div>
-    <div id="admin-exercise-list-full" class="admin-right-ex-list" style="max-height:none;">${exList}</div>
+    <p class="admin-main-sub">${db.length} exercícios — edite nomes e grupos musculares</p>
+    <div class="admin-right-search" style="margin-bottom:12px;">
+      <input type="text" id="admin-ex-search-full" placeholder="Buscar por nome, músculo ou ID..." oninput="onAdminExSearch(this.value)">
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;" id="admin-ex-filters">${filterChips}</div>
+    <div id="admin-exercise-list-full" class="admin-ex-list-full"></div>
+    <div id="admin-ex-load-more" style="text-align:center;padding:16px;"></div>
   `;
+}
+
+function renderAdminExercisesAfterShell() {
+  renderAdminExListFull();
 }
 
 function renderAdminWorkouts() {
@@ -3289,19 +3294,87 @@ function deleteExerciseEdit(exId) {
   renderAdminShell();
 }
 
-function filterAdminExercisesFull() {
-  const query = (document.getElementById('admin-ex-search-full')?.value || '').toLowerCase();
+let adminExActiveFilter = 'Todos';
+
+function setAdminExFilter(f) {
+  adminExActiveFilter = f;
+  adminExDisplayCount = 50;
+  document.querySelectorAll('#admin-ex-filters .filter-chip').forEach(btn => {
+    btn.classList.toggle('active', btn.textContent === f);
+  });
+  renderAdminExListFull();
+}
+
+function onAdminExSearch(val) {
+  adminExSearchQuery = (val || '').toLowerCase();
+  adminExDisplayCount = 50;
+  renderAdminExListFull();
+}
+
+function renderAdminExListFull() {
   const db = typeof EXERCISES_DB !== 'undefined' ? EXERCISES_DB : [];
+  const MUSCLES = ["Abdome","Antebraço","Bíceps","Corpo","Costas","Glúteo","Membros Superiores","Membros Inferiores","Ombro","Peito","Perna","Tríceps"];
   let filtered = db;
-  if (query) filtered = filtered.filter(ex => String(ex.id).includes(query) || ex.name.toLowerCase().includes(query) || ex.muscle.toLowerCase().includes(query));
+
+  if (adminExSearchQuery) {
+    filtered = filtered.filter(ex =>
+      String(ex.id).includes(adminExSearchQuery) ||
+      ex.name.toLowerCase().includes(adminExSearchQuery) ||
+      ex.muscle.toLowerCase().includes(adminExSearchQuery)
+    );
+  }
+  if (adminExActiveFilter && adminExActiveFilter !== 'Todos') {
+    filtered = filtered.filter(ex => ex.muscle === adminExActiveFilter || ex.category === adminExActiveFilter);
+  }
+
+  const displayItems = filtered.slice(0, adminExDisplayCount);
+  const hasMore = adminExDisplayCount < filtered.length;
+
   const listEl = document.getElementById('admin-exercise-list-full');
-  if (!listEl) return;
-  listEl.innerHTML = filtered.slice(0, 50).map(ex => {
-    const edit = remoteConfig.exerciseEdits[String(ex.id)] || {};
-    const displayName = edit.name || ex.name;
-    const displayMuscle = edit.muscle || ex.muscle;
-    return `<div class="admin-ex-item"><div class="admin-ex-thumb">${ex.id}</div><div class="admin-ex-info"><div class="admin-ex-name">${displayName}</div><div class="admin-ex-muscle">${displayMuscle}</div></div><div class="admin-ex-actions"><button class="admin-ex-edit-btn" onclick="editExercise(${ex.id})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="admin-ex-delete-btn" onclick="deleteExerciseEdit(${ex.id})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button></div></div>`;
-  }).join('');
+  const loadMoreEl = document.getElementById('admin-ex-load-more');
+
+  if (listEl) {
+    listEl.innerHTML = displayItems.map(ex => {
+      const edit = remoteConfig.exerciseEdits[String(ex.id)] || {};
+      const displayName = edit.name || ex.name;
+      const displayMuscle = edit.muscle || ex.muscle;
+      const gif = getExerciseGifPath(ex);
+      const idArg = typeof ex.id === 'string' ? "'" + ex.id + "'" : ex.id;
+      const muscleOptions = MUSCLES.map(m =>
+        `<option value="${m}" ${m === displayMuscle ? 'selected' : ''}>${m}</option>`
+      ).join('');
+      return `
+        <div class="admin-ex-row">
+          <img class="admin-ex-gif" src="${gif}" alt="${displayName}" onerror="this.style.display='none'" loading="lazy">
+          <div class="admin-ex-info">
+            <input class="admin-ex-name-input" type="text" value="${displayName}" onchange="updateExerciseName(${idArg}, this.value)" placeholder="Nome do exercício">
+            <div class="admin-ex-id">#${ex.id}</div>
+            <select class="admin-ex-muscle-select" onchange="updateExerciseMuscle(${idArg}, this.value)">
+              ${muscleOptions}
+            </select>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  if (loadMoreEl) {
+    if (hasMore) {
+      const remaining = filtered.length - adminExDisplayCount;
+      loadMoreEl.innerHTML = `<button class="builder-add-btn" onclick="loadMoreAdminEx()" style="margin:0 auto;max-width:300px;">Carregar mais (${remaining} restantes)</button>`;
+    } else {
+      loadMoreEl.innerHTML = `<div style="font-size:0.8rem;color:var(--text-muted);padding:12px;">Mostrando ${displayItems.length} de ${filtered.length} exercícios</div>`;
+    }
+  }
+}
+
+function loadMoreAdminEx() {
+  adminExDisplayCount += 50;
+  renderAdminExListFull();
+}
+
+function filterAdminExercisesFull() {
+  onAdminExSearch(document.getElementById('admin-ex-search-full')?.value || '');
 }
 
 function filterAdminExercises() {
