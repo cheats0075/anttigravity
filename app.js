@@ -397,18 +397,12 @@ async function loadWorkouts() {
 }
 
 async function loadUserWorkouts(userId) {
-  if (!authToken) {
-    userWorkouts = {};
-    return;
-  }
+  if (!authToken) return;
 
   const data = await apiGet(`/user-workouts/${userId}`);
   if (data && Array.isArray(data)) {
     userWorkouts[userId] = data;
-    return;
   }
-
-  userWorkouts = {};
 }
 
 async function saveUserWorkouts(userId, days) {
@@ -2952,7 +2946,7 @@ function renderAdminWorkouts() {
   return renderAdminBuilderContent();
 }
 
-function adminSearchUser() {
+async function adminSearchUser() {
   const uid = parseInt(document.getElementById('admin-builder-search-id')?.value, 10);
   if (!uid) return;
   const user = (remoteConfig.users || []).find(u => u.id === uid);
@@ -2962,6 +2956,7 @@ function adminSearchUser() {
   builderSelectedDay = null;
   builderWorkoutTitle = '';
   adminSection = 'workouts';
+  await loadUserWorkouts(uid);
   renderAdminShell();
 }
 
@@ -3218,7 +3213,7 @@ function showAdminSection(section) {
   renderAdminShell();
 }
 
-function viewUserWorkout(userId) {
+async function viewUserWorkout(userId) {
   const user = (remoteConfig.users || []).find(u => u.id === userId);
   if (!user) return;
   builderTargetUserId = userId;
@@ -3226,6 +3221,7 @@ function viewUserWorkout(userId) {
   builderSelectedDay = null;
   builderWorkoutTitle = '';
   adminSection = 'workouts';
+  await loadUserWorkouts(userId);
   renderAdminShell();
 }
 
